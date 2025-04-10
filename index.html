@@ -1,1 +1,312 @@
-merhaba dronox
+<!-- Copyright 2025 Kaya Sertel & ENGRARE®. All Rights Reserved. -->
+<!DOCTYPE html>
+<html  lang="tr" dir="ltr" data-cast-api-enabled="true">
+<head>
+<title>ENGRARE-DRONOX</title>
+<link rel="icon" href="https://www.engrare.com/files/photos/engrare_logo.png" type="image/gif" sizes="48x48">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=0, minimum-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://www.engrare.com/files/photos/title_icon.png" />
+<meta property="og:image:width" content="100" />
+<meta property="og:image:height" content="100" />
+<meta property="twitter:image" content="https://www.engrare.com/files/photos/title_icon.png"  />
+<meta property="og:title" content="Team Engrare WebSitesi">
+<meta property="og:url" content="https://www.engrare.com">
+<meta property="og:description" content="engrare takımının websitesine hoş geldiniz.">
+<meta content="engrare takımının websitesine hoş geldiniz." name="description">
+<noscript>
+<style>
+.main_noscript_div {
+	height:	300px;
+	width: 450px;
+	position: fixed;
+	z-index: 20;
+	top: 50%;
+	left: 50%;
+	margin-left: -227px;
+	margin-top: -152px;
+	background-color: grey;
+	color: white;
+	font-family: Atkinson Hyperlegible, sans-serif;
+	border-radius: 10px;
+	border: solid 4px white;
+}
+.noscript_text {
+	font-size: 25px;
+	text-align: center;
+	margin: 30px 40px;
+}
+.noscript_header {
+	text-align: center;
+	margin: 20px;
+}
+.noscript_button {
+	font-size: 20px;
+	position: fixed;
+	width: 150px;
+	height: 80px;
+	text-align: center;
+	margin-left: 50%;
+	left: -75px;
+	font-family: Atkinson Hyperlegible, sans-serif;
+	box-shadow: 4px 4px black;
+	cursor: pointer;
+	border: solid 2px black;
+}
+.noscript_button:hover {
+	box-shadow: 2px 2px black;
+	background-color: blue;
+	color: white;
+}
+.cover_page {
+	background-color: black;
+	opacity: 0.9;
+	width: 100%;
+	height: 100%;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	z-index: 19;
+}
+ </style>
+<div class="main_noscript_div">
+<h1 class="noscript_header">JavaScript Error</h1>
+<h3 class="noscript_text">It looks like JavaScript closed or not supported in your browser</h3>
+<form target="_blank" action="https://support.google.com/adsense/answer/12654?hl=en"><button class="noscript_button">click for help!</button></form>
+</div>
+<div class="cover_page"></div>
+</noscript>
+<link href='https://fonts.googleapis.com/css?family=Atkinson Hyperlegible|Bebas Neue|Montserrat' rel='stylesheet'>
+<!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">-->
+<!-- Add the Swiper library -->
+
+<!-- Add the Swiper styles -->
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/all.css">
+	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-solid.css">
+	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-light.css">
+	<script src="https://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
+<script src="files/myScript.js"></script>
+<link rel="stylesheet" href="files/myStyle.css">
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+  import { getDatabase, ref, get, set, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiWySgji6BIrn3d8noZ1c5NXYdq8C7ogU",
+    authDomain: "sample-firebase-ai-app-14b1c.firebaseapp.com",
+    databaseURL: "https://sample-firebase-ai-app-14b1c-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "sample-firebase-ai-app-14b1c",
+    storageBucket: "sample-firebase-ai-app-14b1c.firebasestorage.app",
+    messagingSenderId: "136159458580",
+    appId: "1:136159458580:web:20fee11d32eb7c8e93be01"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const database = getDatabase(app);
+
+  // DOM Elements
+  const loginForm = document.getElementById('login-form');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  
+
+  // Handle login form submission
+window.logintofirebase = function logintofirebase(username, password) {
+	var logindata = {
+		"username": "",
+		"password": ""
+	};
+	
+	if(typeof username === 'undefined') {
+		logindata.username = usernameInput.value;
+		logindata.password = passwordInput.value;
+	} else {
+		logindata.username = username;
+		logindata.password = password;
+	}
+
+    // Sign in with email and password
+    signInWithEmailAndPassword(auth, logindata.username, logindata.password)
+      .then((userCredential) => {
+        // Signed in successfully
+        const user = userCredential.user;
+        console.log('Giriş başarılı:', user);
+		if(!is_html_loaded) {
+			if(replaceHtmlWithUpdatedContent()) {
+				is_html_loaded = true;
+			} else {
+				alert("Bir hata oluştu. Dosya Yüklenemedi.");
+			}
+		}
+		setCookie(logincookiename, logindata.username + "|" + logindata.password, 30);
+		is_login_ok = true;
+
+      })
+      .catch((error) => {
+        console.error('Giriş hatası:', error);
+        alert('Giriş başarısız: ' + error.message);
+      });
+  }
+
+window.signoutfirebase = function signoutfirebase() {
+	signOut(auth)
+		.then(() => {
+			is_login_ok = false;
+			openPage(0);
+			$("#username, #password").val("");
+			console.log("Çıkış başarılı");
+		})
+		.catch((error) => {
+			console.error("Çıkış sırasında hata oluştu:", error);
+		});
+}
+
+window.readData = function readData(dataname) {
+  var DataRef = ref(database, dataname);
+  return get(DataRef)
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        return snapshot.val(); // Promise ile veriyi döndür
+      } else {
+        console.log('Veri bulunamadı.');
+        return null;
+      }
+    })
+    .catch((error) => {
+      console.error('Veri alma hatası:', error);
+      return null;
+    });
+};
+
+window.writeData = function writeData(dataname, writtenData) {
+	var DataRef = ref(database, "SDTdata/client/" + dataname);
+	
+	set(DataRef, writtenData)
+	.then(() => {
+		console.log("Veri başarıyla yazıldı.");
+	})
+	.catch((error) => {
+		console.error("Veri yazma hatası:", error);
+	});
+}
+
+window.checkUserOnline = function checkUserOnline(userId) {
+    const userStatusRef = ref(database, `users/${userId}/status`);
+    
+    onValue(userStatusRef, (snapshot) => {
+        if (snapshot.exists()) {
+            console.log(`Kullanıcı durumu: ${snapshot.val()}`);
+        } else {
+            console.log("Kullanıcı bilgisi bulunamadı.");
+        }
+    });
+}
+
+
+
+
+
+    </script>
+
+
+
+</head>
+
+<body>
+
+<!--<div class="fixed_menu_top"></div>-->
+<div class="menu_closer" onclick="openLeftMenu()"></div>
+
+<div class="fixed_menu_top noselect">
+	<div class="fixed_menu_cont">
+		<div class="fixed_menu_left_cont">
+			<div class="fixed_menu_button bar_button" onclick="openLeftMenu()">
+				<i class="fa fa-bars menu_opener"></i>
+			</div>
+			<div class="fixed_menu_all_buttons_cont">
+				<div class="fixed_menu_button fixed_menu_buttons_left fixed_menu_button_selected" onclick="openPageRequest(0)">
+					<p>Giriş Yap</p>
+				</div>
+				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_2" onclick="openPageRequest(1)">
+					<p>Kontrol Anasayfası</p>
+				</div>
+				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_3" onclick="openPageRequest(2)">
+					<p>Cihazım</p>
+				</div>
+				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_4" onclick="openPageRequest(3)">
+					<p>Görev Girdisi</p>
+				</div>
+				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_5" onclick="openPageRequest(4)">
+					<p>Ayarlar</p>
+				</div>
+			</div>
+			
+		</div>
+		<div class="fixed_menu_logo_part">
+			<img src="https://www.engrare.com/files/photos/engrare_logo.png" height="80%">
+			<div class="fixed_menu_logo_text_part">
+				<p class="fixed_menu_logo_text">Engrare</p>
+				<hr class="fixed_menu_logo_hr" />
+				<p class="fixed_menu_logo_text">Teknofest Team</p>
+			</div>
+		</div>
+		<div class="fixed_menu_right_cont" onClick="menuState(2)">
+			<div class="fixed_menu_button fixed_menu_button_3">
+			<!--<div class="notification_num">3</div>
+				<i class="fa fa-bell notification_bell"></i>-->
+				<div class="notification_num"><i class="fa-solid fa-gear settings_button_top"></i></div>
+			<i class="fa-solid fa-gear settings_button_top"></i> 
+			</div>
+		</div>
+			
+	</div>
+</div>
+	
+	
+
+<div class="main_div">
+
+		<div class="fixed_menu_space"></div>
+		<div class="main_container_login">
+			<div class="main_container">
+				<div class="main_container_outer">
+					<div class="main_menu_content_outer">
+								<div class="main_container_inner_text">
+									 <h2>LOGIN</h2>
+								</div>
+								
+				<label for="username">Kullanıcı Adı:</label>
+				  <input type="email" id="username" placeholder="E-posta" required />
+				  <br />
+				  <label for="password">Şifre:</label>
+				  <input type="password" id="password" placeholder="Şifre" required />
+				  <br />
+				  <button type="submit" style="cursor: pointer;" onClick="logintofirebase()">Giriş Yap</button>
+							</div>
+				</div>
+			</div>
+		</div>
+<!--file-data-written-starting-place-->
+<div id="placeholder"></div>
+		
+		
+	<div class="copywrite_part">
+<p class="copywrite_text">Bu websitesinin tüm hakları Kaya Sertel ve <b>Engrare©®™</b> ekibine aittir. 3. kişilerin kullanımına kapalıdır.</p>
+</div>
+
+
+
+</div>
+
+
+</body>
+
+</html>

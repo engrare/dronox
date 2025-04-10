@@ -997,6 +997,7 @@ input[type="range"]:active {
 .main_menu_outer_div {
 	display: flex;
 	height: calc(100vh - 120px);
+	flex-direction: column;
 }
 
 .page_2_main_left_div {
@@ -1055,36 +1056,50 @@ input[type="range"]:active {
 	width: 80%;
 }
 
-.main_left_div {
+.main_top_div {
 	resize: horizontal;
 	display: flex;
-	width: 35%;
-	height: 100%;
+	width: 100%;
+	height: 70%;
 	background: #c8a877;
 	align-items: center;
 	justify-content: space-around;
-    flex-direction: column;
 	overflow: auto;
+	flex-direction: row;
 }
 
-.main_right_div {
+.main_bottom_div {
 	display: flex;
-	width: 65%;
-	height: 100%;
+	width: 100%;
+	height: 30%;
 	color: black;
 	overflow: hidden;
 	flex-direction: column;
+	background: #c8a877;
 }
 
 .main_right_top_div {
 	resize: vertical;
 	overflow: auto;
 	background: #aaedf6;
-	width: 100%;
-	height: 70%;
+	color: black;
+	width: 50%;
+	height: 100%;
 	display: flex;
 	justify-content: center;
     align-items: center;
+}
+
+.main_top_left_div {
+	resize: vertical;
+	overflow: auto;
+	background: #aaedf6;
+	width: 50%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+    align-items: center;
+	flex-direction: column;
 }
 
 .map_outer_div {

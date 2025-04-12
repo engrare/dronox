@@ -1000,6 +1000,11 @@ input[type="range"]:active {
 	flex-direction: column;
 }
 
+.main_page_2 {
+	flex-direction: row;
+	
+} 
+
 .page_2_main_left_div {
 	display: flex;
 	width: 40%;
@@ -1057,7 +1062,7 @@ input[type="range"]:active {
 }
 
 .main_top_div {
-	resize: horizontal;
+	resize: vertical;
 	display: flex;
 	width: 100%;
 	height: 70%;
@@ -1074,7 +1079,7 @@ input[type="range"]:active {
 	height: 30%;
 	color: black;
 	overflow: hidden;
-	flex-direction: column;
+	flex-direction: row;
 	background: #c8a877;
 }
 
@@ -1091,7 +1096,7 @@ input[type="range"]:active {
 }
 
 .main_top_left_div {
-	resize: vertical;
+	resize: horizontal;
 	overflow: auto;
 	background: #aaedf6;
 	width: 50%;
@@ -1137,6 +1142,11 @@ input[type="range"]:active {
 	overflow: auto;
 	display: flex;
 	justify-content: space-evenly;
+}
+
+.controller_outer_div {
+	height: 100%;
+	width: 10%;
 }
 
 .text_data_outer_div {

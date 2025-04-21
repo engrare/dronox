@@ -160,8 +160,8 @@ async function replaceHtmlWithUpdatedContent() {
 
 	
 $(document).ready(function() {
-	openPage(1);
-	startWebsite();
+	//openPage(1);
+	//startWebsite();
 		
 	
 	

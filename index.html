@@ -12,8 +12,8 @@
 <meta property="twitter:image" content="https://www.engrare.com/files/photos/title_icon.png"  />
 <meta property="og:title" content="Team Engrare WebSitesi">
 <meta property="og:url" content="https://www.engrare.com">
-<meta property="og:description" content="engrare takımının websitesine hoş geldiniz.">
-<meta content="engrare takımının websitesine hoş geldiniz." name="description">
+<meta property="og:description" content="ENGRARE Drone Kontrol Sistemi websitesine hoş geldiniz.">
+<meta content="ENGRARE Drone Kontrol Sistemi websitesine hoş geldiniz." name="description">
 <noscript>
 <style>
 .main_noscript_div {
@@ -87,9 +87,24 @@
 	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-solid.css">
 	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-light.css">
 	<script src="https://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="files/myScript.js"></script>
 <link rel="stylesheet" href="files/myStyle.css">
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+        input { margin: 3px; }
+    </style>
+	
 <script type="module">
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
@@ -217,7 +232,6 @@ window.checkUserOnline = function checkUserOnline(userId) {
     </script>
 
 
-
 </head>
 
 <body>
@@ -290,7 +304,7 @@ window.checkUserOnline = function checkUserOnline(userId) {
 				  <input type="password" id="password" placeholder="Şifre" required />
 				  <br />
 				  <button type="submit" style="cursor: pointer;" onClick="logintofirebase()">Giriş Yap</button>
-							</div>
+				</div>
 				</div>
 			</div>
 		</div>

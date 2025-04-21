@@ -93,6 +93,9 @@ var is_html_loaded = false;
 var set_spd = 80;
 var logincookiename = "logincookie";
 
+var map_outer_div, droneMarker, rotaCizgisi;
+var begining_point = [41.0082, 28.9784];
+
 function fetchWebsiteData(apiKey) {
 fetch('https://raw.githubusercontent.com/eylulberil/encoded_key/main/keys.json')
   .then(response => response.json())
@@ -143,26 +146,8 @@ async function replaceHtmlWithUpdatedContent() {
             throw new Error("Dosya yüklenemedi.");
 			return false;
         }
-        console.log(htmlContent);
-		
-        $("#placeholder").html(htmlContent);
-		openPage(1);
-		target_spd = document.getElementById('speed_meter_gauge');
-		gauge_spd = new Gauge(target_spd).setOptions(spd_opts);
-		gauge_spd.maxValue = 30;
-		gauge_spd.setMinValue(0);
-		gauge_spd.animationSpeed = 24;
-		gauge_spd.set(0);
-		
-		
-		target_pwr = document.getElementById('power_meter_gauge');
-		gauge_pwr = new Gauge(target_pwr).setOptions(power_opts);
-		gauge_pwr.maxValue = 100;
-		gauge_pwr.setMinValue(0);
-		gauge_pwr.animationSpeed = 24;
-		gauge_pwr.set(0);
-		startObserving();
-		setInterval(writeScreenData, 2000);
+		$("#placeholder").html(htmlContent);
+		startWebsite();
         console.log("HTML eklendi.");
 		return true;
     } catch (error) {
@@ -175,7 +160,8 @@ async function replaceHtmlWithUpdatedContent() {
 
 	
 $(document).ready(function() {
-	//openPage(1);
+	openPage(1);
+	startWebsite();
 		
 	
 	
@@ -236,6 +222,156 @@ function startObserving() {
         observer2.observe(element2);
         console.log("Observer 2 başlatıldı");
     }
+}
+
+function startMap() {
+}
+
+function startWebsite() {
+	openPage(1);
+	target_spd = document.getElementById('speed_meter_gauge');
+	gauge_spd = new Gauge(target_spd).setOptions(spd_opts);
+	gauge_spd.maxValue = 30;
+	gauge_spd.setMinValue(0);
+	gauge_spd.animationSpeed = 24;
+	gauge_spd.set(0);
+	
+	
+	target_pwr = document.getElementById('power_meter_gauge');
+	gauge_pwr = new Gauge(target_pwr).setOptions(power_opts);
+	gauge_pwr.maxValue = 100;
+	gauge_pwr.setMinValue(0);
+	gauge_pwr.animationSpeed = 24;
+	gauge_pwr.set(0);
+	startObserving();
+	
+
+            map_outer_div = L.map('map_outer_div').setView(begining_point, 16);
+			        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri'
+        }).addTo(map_outer_div);
+            
+            // Başlangıç noktasına drone ekle
+            droneMarker = L.marker(begining_point, {
+                icon: L.icon({
+                    iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
+                    iconSize: [50, 50]
+                })
+            }).addTo(map_outer_div);
+	
+
+	setInterval(writeScreenData, 2000);
+}
+
+function addPoleCoordinate(coordinate) {
+    // Siyah daire oluştur (direk)
+    const poleMarker = L.circleMarker(coordinate, {
+        radius: 8, // Biraz daha büyük
+        fillColor: "#ffffff", // İçi beyaz
+        color: "#000000", // Siyah kenarlık
+        weight: 2, // Kenarlık kalınlığı
+        opacity: 1,
+        fillOpacity: 1 // Tam opak
+    }).addTo(map_outer_div);
+    
+    return poleMarker;
+}
+
+// Rota çizgisi ve kırmızı noktalar için
+function addPathCoordinate(old_coordinate, coordinate) {
+    // İki koordinat arasına çizgi ekle
+    if (old_coordinate) {
+        L.polyline([old_coordinate, coordinate], {
+            color: '#ff0000', // Kırmızı çizgi
+            weight: 2,
+            opacity: 0.7,
+            dashArray: '5, 5'
+        }).addTo(map_outer_div);
+    }
+    
+    // Kırmızı yol noktası ekle
+    const pathMarker = L.circleMarker(coordinate, {
+        radius: 4, // Daha küçük boyut
+        fillColor: "#ff0000", // Kırmızı renk
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }).addTo(map_outer_div);
+    
+    return pathMarker;
+}
+
+function clearScreen() {
+	
+}
+
+function clearSpesificCoordinates(coordinates) {
+	
+}
+
+function calculateInfinityCoordinates(poles_coors) {
+
+    const [p1, p2] = poles_coors;
+    const points = [];
+
+    // Matematiksel parametreler
+    const center = [
+        (p1[0] + p2[0]) / 2, // Merkez enlem
+        (p1[1] + p2[1]) / 2  // Merkez boylam
+    ];
+
+    // Direkler arası mesafe (ölçek faktörü)
+    const dx = p2[1] - p1[1];
+    const dy = p2[0] - p1[0];
+    const distance = Math.sqrt(dx * dx + dy * dy) * 0.8; // %80 ölçek
+
+    // Lemniskat (sonsuzluk eğrisi) parametrik denklemi
+    const steps = 50; // Nokta sayısı
+    for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * Math.PI * 2; // 0-2π arası
+
+        // Parametrik denklemler
+        const scale = Math.pow(Math.sin(t), 2) + 1;
+        const x = Math.cos(t) / scale;
+        const y = Math.sin(t) * Math.cos(t) / scale;
+
+        // Koordinat dönüşümü
+        const lat = center[0] + y * distance * 0.8;
+        const lng = center[1] + x * distance;
+
+        points.push([lat, lng]);
+    }
+
+    // Düzgün bir ∞ şekli için ikinci yarıyı ekleme
+    for (let i = steps; i >= 0; i--) {
+        const t = (i / steps) * Math.PI * 2;
+        const scale = Math.pow(Math.sin(t), 2) + 1;
+        const x = Math.cos(t) / scale;
+        const y = -Math.sin(t) * Math.cos(t) / scale; // y'yi negatif alıyoruz
+
+        const lat = center[0] + y * distance * 0.8;
+        const lng = center[1] + x * distance;
+
+        points.push([lat, lng]);
+    }
+
+    return points;
+}
+
+function drawInfinity() {
+	const lat1 = document.getElementById('lat1');
+	const lng1 = document.getElementById('lng1');
+	const lat2 = document.getElementById('lat2');
+	const lng2 = document.getElementById('lng2');
+	var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
+	addPoleCoordinate(poles[0]);
+	addPoleCoordinate(poles[1]);
+	var rote_coor = calculateInfinityCoordinates(poles);
+	addPathCoordinate(false, rote_coor[0]);
+	for(var i = 1; i < rote_coor.length(); i++) {
+		addPathCoordinate(rote_coor[i - 1], rote_coor[i]);
+	}
 }
 
 
@@ -421,7 +557,7 @@ async function writeScreenData() {
 	if(is_login_ok) {//if(is_login_ok && await checkUserOnline("")) {
 		mission_sec++;
 		var red_data = await readData("SDTdata/robot1");
-		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "Haritalandırma", "Yük Taşıma", "Şarj"};
+		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "map_outer_divlandırma", "Yük Taşıma", "Şarj"};
 		if (red_data) {
 			$(".div_charge_bar_inner").css("width", red_data.battery_percent + "%");
 			$(".battery_power_perc").text(red_data.battery_percent + "%");

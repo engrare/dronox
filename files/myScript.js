@@ -87,7 +87,7 @@ var target_spd;
 var gauge_spd;
 var target_pwr;
 var gauge_pwr;
-var selected_msn = [1, 1];
+var selected_msn = 0; //0: not selected, 1: infinity, 2: release Weight, 3: take Weight
 var is_html_loaded = false;
 
 var set_spd = 80;
@@ -161,7 +161,9 @@ async function replaceHtmlWithUpdatedContent() {
 
 	
 $(document).ready(function() {
-	startWebsite();
+	if (!window.location.href.includes("dronox.engrare.com")) {
+		startWebsite();
+	}
 		
 	
 	
@@ -283,20 +285,20 @@ function startWebsite() {
 	startObserving();
 	
 
-            map_outer_div = L.map('map_outer_div').setView(begining_point, 16);
-			        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'ENGRARE © Tiles © Esri'
-        }).addTo(map_outer_div);
+	map_outer_div = L.map('map_outer_div').setView(begining_point, 16);
+	L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+		attribution: 'ENGRARE © Tiles © Esri'
+	}).addTo(map_outer_div);
             
-            droneMarker = L.marker(begining_point, {
-                icon: L.icon({
-                    iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
-                    iconSize: [50, 50]
-                })
-            }).addTo(map_outer_div);
+	droneMarker = L.marker(begining_point, {
+		icon: L.icon({
+			iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
+			iconSize: [50, 50]
+		})
+	}).addTo(map_outer_div);
 	
 
-	setInterval(writeScreenData, 2000);
+	setInterval(writeScreenData, 1000);
 }
 
 
@@ -382,21 +384,21 @@ function clearPoleCoordinates() {
     poleElements.forEach(element => {
         map_outer_div.removeLayer(element);
     });
-    poleElements = []; // Diziyi resetle
+    poleElements = [];
 }
 
 function clearPathCoordinates() {
     pathElements.forEach(element => {
         map_outer_div.removeLayer(element);
     });
-    pathElements = []; // Diziyi resetle
+    pathElements = [];
 }
 
 function clearBorderCoordinates() {
     borderElements.forEach(element => {
         map_outer_div.removeLayer(element);
     });
-    borderElements = []; // Diziyi resetle
+    borderElements = [];
 }
 
 function updateDroneLocation(coors) {
@@ -467,6 +469,7 @@ function calculateInfinityPath(poles_coors, startPoint) {
 }
 
 function drawInfinity() {
+	selected_msn = 1;
 	clearPathCoordinates();
 	const lat1 = document.getElementById('pole_lat1');
 	const lng1 = document.getElementById('pole_lng1');
@@ -482,6 +485,7 @@ function drawInfinity() {
 }
 
 function drawSearchPath(mission_type) {
+	selected_msn = mission_type + 1;
 	clearPathCoordinates();
 	
 }
@@ -489,7 +493,16 @@ function drawSearchPath(mission_type) {
 var time_couter_interval;
 
 function startSelectedMission() {
-	time_couter_interval = setInterval(countMissionTime, 1000);
+	if(selected_msn != 0) {
+		time_couter_interval = setInterval(countMissionTime, 1000);
+		begining_point = drone_current_location;
+		if(is_login_ok) {
+			//var red_data = await readData("SDTdata/client/main_power");
+			writeData("o_dat", drone_current_location);
+		}
+	} else {
+		alert("Görev Seçilmedi.");
+	}
 }
 
 function stopSelectedMission() {
@@ -503,7 +516,8 @@ function stopSelectedMission() {
 	addPathCoordinate(drone_current_location, begining_point);
 	if(is_login_ok) {
 		//var red_data = await readData("SDTdata/client/main_power");
-		writeData("o_dat", begining_point);
+		writeData("c", begining_point);
+		writeData("m", "s");
 	}
 }
 
@@ -536,23 +550,19 @@ function openPageRequest(pagenum) {
 
 async function writeScreenData() {
 	if(is_login_ok) {//if(is_login_ok && await checkUserOnline("")) {
-		var red_data = await readData("SDTdata/robot1");
+		var red_data = await readData("d/dt/dev");
 		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "map_outer_divlandırma", "Yük Taşıma", "Şarj"};
 		if (red_data) {
-			updateDroneLocation(red_data.locat);
+			drone_current_location = red_data.coor;
+			updateDroneLocation(drone_current_location);
 			$(".text_data_value_text:eq(0)").text("Bağlı");
 			$(".text_data_value_text:eq(1)").text(red_data.state);
-			$(".text_data_value_text:eq(3)").text(red_data.temp + "°C");
-			$(".text_data_value_text:eq(4)").text(red_data.battery_current + " Amper");
-			$(".text_data_value_text:eq(5)").text(red_data.battery_voltage + " Volt");
-			$(".text_data_value_text:eq(6)").text(red_data.weight + " kg");
-			const str = red_data.qr_data;
-			const numbers = str.split('|').filter(Boolean);
-			const lastNumber = numbers[numbers.length - 1];
-			$(".text_data_value_text:eq(7)").text(lastNumber);
+			$(".text_data_value_text:eq(3)").text(red_data.current + " Amper");
+			$(".text_data_value_text:eq(4)").text(red_data.voltage + " Volt");
+			$(".text_data_value_text:eq(5)").text(red_data.temp + "°C");
 			
 			gauge_spd.set(red_data.speed);
-			gauge_pwr.set(red_data.battery_percent);
+			gauge_pwr.set(red_data.percent);
 			//console.log("Okunan veri:", red_data);
 		} else {
 			console.log("Veri okunamadı.");

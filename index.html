@@ -189,7 +189,7 @@ window.readData = function readData(dataname) {
 };
 
 window.writeData = function writeData(dataname, writtenData) {
-	var DataRef = ref(database, "SDTdata/client/" + dataname);
+	var DataRef = ref(database, "d/dt/" + dataname);
 	
 	set(DataRef, writtenData)
 	.then(() => {

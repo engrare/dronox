@@ -82,7 +82,7 @@ var is_login_ok = false;
 var is_cookie_red = false;
 var key_pressed = [false, false, false, false, false, false];
 var key_pressed_lift = [false, false];
-var mission_sec = 224;
+var mission_sec = 0;
 var target_spd;
 var gauge_spd;
 var target_pwr;
@@ -94,7 +94,8 @@ var set_spd = 80;
 var logincookiename = "logincookie";
 
 var map_outer_div, droneMarker, rotaCizgisi;
-var begining_point = [41.0082, 28.9784];
+var begining_point = [41.006, 28.9780];
+var drone_current_location = [41.01, 28.97];
 
 function fetchWebsiteData(apiKey) {
 fetch('https://raw.githubusercontent.com/eylulberil/encoded_key/main/keys.json')
@@ -160,8 +161,7 @@ async function replaceHtmlWithUpdatedContent() {
 
 	
 $(document).ready(function() {
-	//openPage(1);
-	//startWebsite();
+	startWebsite();
 		
 	
 	
@@ -169,15 +169,13 @@ $(document).ready(function() {
 		$("#speedValue").text($(this).val());
 	});
 	
-		$(document).keydown(function(event) {
+		/*$(document).keydown(function(event) {
 			var key = event.key;
-			buttonStateChanged(key, true);
 		});
 
 		$(document).keyup(function(event) {
 			var key = event.key;
-			buttonStateChanged(key, false);
-		});
+		});*/
 	
 	if(is_cookie_red == false) {
 		logininfo = readCookie(logincookiename);
@@ -196,15 +194,15 @@ $(document).ready(function() {
 let observer1, observer2;
 
 function startObserving() {
-    var element1 = document.getElementById('main_right_top_div_ID');
-    var element2 = document.getElementById('main_left_div_ID');
+    var element1 = document.getElementById('main_left_div_ID');
+    var element2 = document.getElementById('main_top_div_ID');
 
     if (element1 && !observer1) {
         observer1 = new ResizeObserver(function(entries) {
             entries.forEach(function(entry) {
                 var width = entry.contentRect.width;
                 var height = entry.contentRect.height;
-                $(".main_right_bottom_div").height($(".main_div").height() - $(".main_right_top_div").height() - 120);
+                $(".main_right_top_div").width($(".main_div").width() - $("#main_left_div_ID").width());
             });
         });
         observer1.observe(element1);
@@ -216,12 +214,51 @@ function startObserving() {
             entries.forEach(function(entry) {
                 var width = entry.contentRect.width;
                 var height = entry.contentRect.height;
-                $(".main_right_div").width($(".main_div").width() - $(".main_left_div").width());
+                $(".main_bottom_div").height($(".main_div").height() - $("#main_top_div_ID").height() - 120);
             });
         });
         observer2.observe(element2);
         console.log("Observer 2 başlatıldı");
     }
+}
+
+function enterCoordinate() {
+	if($(".enter_coordinate_outer_div").css("display") != "none") {
+		$(".enter_coordinate_outer_div").fadeOut(400);
+		const p_lat1 = document.getElementById('pole_lat1');
+		const p_lng1 = document.getElementById('pole_lng1');
+		const p_lat2 = document.getElementById('pole_lat2');
+		const p_lng2 = document.getElementById('pole_lng2');
+		var poles = [[p_lat1.value, p_lng1.value], [p_lat2.value, p_lng2.value]];
+		addPoleCoordinate(poles[0]);
+		addPoleCoordinate(poles[1]);
+		
+		const lat1 = document.getElementById('border_lat1');
+		const lng1 = document.getElementById('border_lng1');
+		const lat2 = document.getElementById('border_lat2');
+		const lng2 = document.getElementById('border_lng2');
+		const lat3 = document.getElementById('border_lat3');
+		const lng3 = document.getElementById('border_lng3');
+		const lat4 = document.getElementById('border_lat4');
+		const lng4 = document.getElementById('border_lng4');
+		var borders = [
+		[lat1.value, lng1.value],
+		[lat2.value, lng2.value],
+		[lat3.value, lng3.value],
+		[lat4.value, lng4.value]
+		];
+		addBorderCoordinate(false, borders[0]);
+		for(var i = 1; i < borders.length; i++) {
+			addBorderCoordinate(borders[i - 1], borders[i]);
+		}
+		addBorderCoordinate(borders[borders.length - 1], borders[0]);
+		
+	} else {
+		$(".enter_coordinate_outer_div").fadeIn(400);
+		clearPathCoordinates();
+		clearPoleCoordinates();
+		clearBorderCoordinates();
+	}
 }
 
 function startMap() {
@@ -248,10 +285,9 @@ function startWebsite() {
 
             map_outer_div = L.map('map_outer_div').setView(begining_point, 16);
 			        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles © Esri'
+            attribution: 'ENGRARE © Tiles © Esri'
         }).addTo(map_outer_div);
             
-            // Başlangıç noktasına drone ekle
             droneMarker = L.marker(begining_point, {
                 icon: L.icon({
                     iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
@@ -262,6 +298,13 @@ function startWebsite() {
 
 	setInterval(writeScreenData, 2000);
 }
+
+
+
+var pathElements = [];
+var poleElements = [];
+var borderElements = [];
+
 
 function addPoleCoordinate(coordinate) {
     // Siyah daire oluştur (direk)
@@ -274,255 +317,203 @@ function addPoleCoordinate(coordinate) {
         fillOpacity: 1 // Tam opak
     }).addTo(map_outer_div);
     
+    poleElements.push(poleMarker);
     return poleMarker;
 }
 
 // Rota çizgisi ve kırmızı noktalar için
 function addPathCoordinate(old_coordinate, coordinate) {
     // İki koordinat arasına çizgi ekle
+    let line = null;
     if (old_coordinate) {
-        L.polyline([old_coordinate, coordinate], {
-            color: '#ff0000', // Kırmızı çizgi
+        line = L.polyline([old_coordinate, coordinate], {
+            color: '#ff0000',
             weight: 2,
             opacity: 0.7,
             dashArray: '5, 5'
         }).addTo(map_outer_div);
+        pathElements.push(line); // Çizgiyi kaydet
     }
     
     // Kırmızı yol noktası ekle
     const pathMarker = L.circleMarker(coordinate, {
-        radius: 4, // Daha küçük boyut
-        fillColor: "#ff0000", // Kırmızı renk
+        radius: 4,
+        fillColor: "#ff0000",
         color: "#ffffff",
         weight: 1,
         opacity: 1,
         fillOpacity: 0.9
     }).addTo(map_outer_div);
     
+    pathElements.push(pathMarker); // Marker'ı kaydet
     return pathMarker;
 }
 
-function clearScreen() {
-	
+
+function addBorderCoordinate(old_coordinate, coordinate) {
+    // İki koordinat arasına çizgi ekle
+    let line = null;
+    if (old_coordinate) {
+        line = L.polyline([old_coordinate, coordinate], {
+            color: '#ff0000',
+            weight: 2,
+            opacity: 1,
+            dashArray: '5, 5'
+        }).addTo(map_outer_div);
+        borderElements.push(line); // Çizgiyi kaydet
+    }
+    
+    // Kırmızı yol noktası ekle
+    const pathMarker = L.circleMarker(coordinate, {
+        radius: 6,
+        fillColor: "#ff0000",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }).addTo(map_outer_div);
+    
+    borderElements.push(pathMarker); // Marker'ı kaydet
+    return pathMarker;
 }
 
-function clearSpesificCoordinates(coordinates) {
-	
+
+function clearPoleCoordinates() {
+    poleElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    poleElements = []; // Diziyi resetle
 }
 
-function calculateInfinityCoordinates(poles_coors) {
+function clearPathCoordinates() {
+    pathElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    pathElements = []; // Diziyi resetle
+}
 
-    const [p1, p2] = poles_coors;
-    const points = [];
+function clearBorderCoordinates() {
+    borderElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    borderElements = []; // Diziyi resetle
+}
 
-    // Matematiksel parametreler
-    const center = [
-        (p1[0] + p2[0]) / 2, // Merkez enlem
-        (p1[1] + p2[1]) / 2  // Merkez boylam
-    ];
+function updateDroneLocation(coors) {
+	droneMarker.setLatLng(coors);
+    map_outer_div.panTo(coors);
+}
 
-    // Direkler arası mesafe (ölçek faktörü)
+function calculateInfinityPath(poles_coors, startPoint) {
+    
+    const [p1, p2] = poles_coors.map(c => c.map(Number));
+    const [startLat, startLng] = startPoint.map(Number);
+    
+    if ([...p1, ...p2, startLat, startLng].some(isNaN)) {
+        console.error("Geçersiz koordinatlar!");
+        return [];
+    }
+
+    // Temel parametreler
     const dx = p2[1] - p1[1];
     const dy = p2[0] - p1[0];
-    const distance = Math.sqrt(dx * dx + dy * dy) * 0.8; // %80 ölçek
+    const distance = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    const center = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2];
+    const a = distance / Math.sqrt(2);
 
-    // Lemniskat (sonsuzluk eğrisi) parametrik denklemi
-    const steps = 50; // Nokta sayısı
+    // Tüm noktaları oluştur
+    const steps = 21;
+    const allPoints = [];
+    
+    // Parametrik denklemlerle tüm noktaları oluştur
     for (let i = 0; i <= steps; i++) {
-        const t = (i / steps) * Math.PI * 2; // 0-2π arası
-
-        // Parametrik denklemler
-        const scale = Math.pow(Math.sin(t), 2) + 1;
-        const x = Math.cos(t) / scale;
-        const y = Math.sin(t) * Math.cos(t) / scale;
-
-        // Koordinat dönüşümü
-        const lat = center[0] + y * distance * 0.8;
-        const lng = center[1] + x * distance;
-
-        points.push([lat, lng]);
-    }
-
-    // Düzgün bir ∞ şekli için ikinci yarıyı ekleme
-    for (let i = steps; i >= 0; i--) {
         const t = (i / steps) * Math.PI * 2;
-        const scale = Math.pow(Math.sin(t), 2) + 1;
-        const x = Math.cos(t) / scale;
-        const y = -Math.sin(t) * Math.cos(t) / scale; // y'yi negatif alıyoruz
-
-        const lat = center[0] + y * distance * 0.8;
-        const lng = center[1] + x * distance;
-
-        points.push([lat, lng]);
+        const x = (a * Math.cos(t)) / (1 + Math.sin(t)**2);
+        const y = (a * Math.sin(t) * Math.cos(t)) / (1 + Math.sin(t)**2);
+        
+        const rotX = x * Math.cos(angle) - y * Math.sin(angle);
+        const rotY = x * Math.sin(angle) + y * Math.cos(angle);
+        
+        allPoints.push([
+            center[0] + rotY,
+            center[1] + rotX
+        ]);
     }
 
-    return points;
+    // Başlangıç noktasına en yakın noktayı bul
+    let closestIndex = 0;
+    let minDistance = Infinity;
+    
+    allPoints.forEach((point, i) => {
+        const d = Math.hypot(point[0]-startLat, point[1]-startLng);
+        if (d < minDistance) {
+            minDistance = d;
+            closestIndex = i;
+        }
+    });
+
+    // Noktaları yeniden sırala (en yakından başlayıp döngüyü tamamla)
+    const sortedPoints = [];
+    for (let i = 0; i < allPoints.length; i++) {
+        const idx = (closestIndex + i) % allPoints.length;
+        sortedPoints.push(allPoints[idx]);
+    }
+    
+    // Başlangıç noktasına geri dönmek için son noktayı ekle
+    sortedPoints.push([startLat, startLng]);
+
+    return sortedPoints;
 }
 
 function drawInfinity() {
-	const lat1 = document.getElementById('lat1');
-	const lng1 = document.getElementById('lng1');
-	const lat2 = document.getElementById('lat2');
-	const lng2 = document.getElementById('lng2');
+	clearPathCoordinates();
+	const lat1 = document.getElementById('pole_lat1');
+	const lng1 = document.getElementById('pole_lng1');
+	const lat2 = document.getElementById('pole_lat2');
+	const lng2 = document.getElementById('pole_lng2');
 	var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
-	addPoleCoordinate(poles[0]);
-	addPoleCoordinate(poles[1]);
-	var rote_coor = calculateInfinityCoordinates(poles);
+	var rote_coor = calculateInfinityPath(poles, begining_point);
 	addPathCoordinate(false, rote_coor[0]);
-	for(var i = 1; i < rote_coor.length(); i++) {
+	for(var i = 1; i < rote_coor.length; i++) {
 		addPathCoordinate(rote_coor[i - 1], rote_coor[i]);
 	}
+	addPathCoordinate(rote_coor[rote_coor.length - 1], rote_coor[0]);
 }
 
-
-
-function buttonStateChanged(key, bool_btn_state) {
+function drawSearchPath(mission_type) {
+	clearPathCoordinates();
 	
-	if(bool_btn_state) {
-		if(key == 'q' && !key_pressed[0]) {
-			//console.log("turning right");
-			$(".manuel_control_turn_btn:not(:eq(0))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(0)").css("background", "#3d3d3d");
-			moveRobot(-set_spd, set_spd);
-			key_pressed[0] = true;
-		} else if(key == 'e' && !key_pressed[1]) {
-			//console.log("turning left");
-			$(".manuel_control_turn_btn:not(:eq(1))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(1)").css("background", "#3d3d3d");
-			moveRobot(set_spd, -set_spd);
-			key_pressed[1] = true;
-		} else	if(key == 'w' && !key_pressed[2]) {
-			//console.log("going forward");
-			$(".manuel_control_turn_btn:not(:eq(2))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(2)").css("background", "#3d3d3d");
-			moveRobot(set_spd, set_spd);
-			key_pressed[2] = true;
-		} else	if(key == 'a' && !key_pressed[3]) {
-			//console.log("going left");
-			$(".manuel_control_turn_btn:not(:eq(3))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(3)").css("background", "#3d3d3d");
-			moveRobot(set_spd/2, set_spd);
-			key_pressed[3] = true;
-		} else if(key == 'd' && !key_pressed[4]) {
-			//console.log("going backward");
-			$(".manuel_control_turn_btn:not(:eq(4))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(4)").css("background", "#3d3d3d");
-			moveRobot(set_spd, set_spd/2);
-			key_pressed[4] = true;
-		} else if(key == 's' && !key_pressed[5]) {
-			//console.log("going right");
-			$(".manuel_control_turn_btn:not(:eq(5))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(5)").css("background", "#3d3d3d");
-			moveRobot(-set_spd, -set_spd);
-			key_pressed[5] = true;
-		}
-		
-		if(key == 'r' && !key_pressed_lift[0]) {
-			$(".manuel_control_turn_btn:not(:eq(6))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(6)").css("background", "#3d3d3d");
-			moveLift(100);
-			key_pressed_lift[0] = false;
-		} else if(key == 'f' && !key_pressed_lift[1]) {
-			$(".manuel_control_turn_btn:not(:eq(7))").css("background", "black");
-			$(".manuel_control_turn_btn:eq(7)").css("background", "#3d3d3d");
-			moveLift(-100);
-			key_pressed_lift[1] = false;
-		}
-	} else {
-		let is_related = true;
-		if(key == 'q') {
-			key_pressed[0] = false;
-			$(".manuel_control_turn_btn:eq(0)").css("background", "black");
-		} else if(key == 'e') {
-			key_pressed[1] = false;
-			$(".manuel_control_turn_btn:eq(1)").css("background", "black");
-		} else	if(key == 'w') {
-			key_pressed[2] = false;
-			$(".manuel_control_turn_btn:eq(2)").css("background", "black");
-		} else	if(key == 'a') {
-			key_pressed[3] = false;
-			$(".manuel_control_turn_btn:eq(3)").css("background", "black");
-		} else	if(key == 'd') {
-			key_pressed[4] = false;
-			$(".manuel_control_turn_btn:eq(4)").css("background", "black");
-		} else if(key == 's') {
-			key_pressed[5] = false;
-			$(".manuel_control_turn_btn:eq(5)").css("background", "black");
-		} else {
-			is_related = false;
-			$(".manuel_control_turn_btn").css("background", "black");
-		}
-		
-		if(key == 'r') {
-			if(key_pressed_lift[1]) {
-				moveLift(-100);
-			} else {
-				moveLift(0);
-			}
-			key_pressed_lift[0] = false;
-			$(".manuel_control_turn_btn:eq(6)").css("background", "black");
-		} else if(key == 'f') {
-			if(key_pressed_lift[0]) {
-				moveLift(100);
-			} else {
-				moveLift(0);
-			}
-			key_pressed_lift[1] = false;
-			$(".manuel_control_turn_btn:eq(7)").css("background", "black");
-		}
-		
-		if(is_related) {
-			let i = key_pressed.length;
-			while(i--) {
-				if(key_pressed[i]){
-					break;
-				} else if(i == 0) {
-					moveRobot(0, 0); //stop
-				}
-			}
-		}
+}
+
+var time_couter_interval;
+
+function startSelectedMission() {
+	time_couter_interval = setInterval(countMissionTime, 1000);
+}
+
+function stopSelectedMission() {
+	clearPathCoordinates();
+	if (time_couter_interval != null) {
+		clearInterval(time_couter_interval);
+		$(".text_data_value_text:eq(2)").text("00:00");
 	}
-}
-
-async function mapping() {
-	console.log("mapping e bastın.");
-	//writeData("manuel_data", "deger");
-}
-
-async function stopMission() {
-	console.log("stop a bastın.");
-	//writeData("manuel_data", "deger");
-}
-
-async function startMission() {
-	console.log("start a bastın.");
-	if(is_login_ok)
-		writeData("otonomus_data", "1|34|25|9|27");
-}
-
-async function openCloseLED() {
-	console.log("LED e bastın.");
+	
+	addPathCoordinate(false, drone_current_location);
+	addPathCoordinate(drone_current_location, begining_point);
 	if(is_login_ok) {
-		var red_data = await readData("SDTdata/client/led");
-		writeData("led", !red_data);
+		//var red_data = await readData("SDTdata/client/main_power");
+		writeData("o_dat", begining_point);
 	}
 }
 
-async function openCloseBuzzer() {
-	console.log("Buzzer a bastın.");
-	if(is_login_ok) {
-		var red_data = await readData("SDTdata/client/buzzer");
-		writeData("buzzer", !red_data);
-	}
+function countMissionTime() {
+	mission_sec++;
+	$(".text_data_value_text:eq(2)").text(Math.floor(mission_sec / 60).toString().padStart(2, '0') + ":" + (mission_sec % 60).toString().padStart(2, '0'));
+	
 }
 
-async function openClosePower() {
-	console.log("Power a bastın.");
-	if(is_login_ok) {
-		var red_data = await readData("SDTdata/client/main_power");
-		writeData("main_power", !red_data);
-	}
-}
+
 
 async function selectScenario(scenario_type, mapping_or_weight) {
 	console.log("senerioya a bastın.");
@@ -534,16 +525,6 @@ async function selectScenario(scenario_type, mapping_or_weight) {
 	}
 }
 
-function moveRobot(left_spd, right_spd) {
-	var manuel_data_str = left_spd + "|" + right_spd;
-	if(is_login_ok)
-		writeData("manuel_data", manuel_data_str);
-}
-
-function moveLift(lift_spd) {
-	if(is_login_ok)
-		writeData("lift_data", lift_spd);
-}
 
 function openPageRequest(pagenum) {
 	if(is_login_ok) {
@@ -555,15 +536,12 @@ function openPageRequest(pagenum) {
 
 async function writeScreenData() {
 	if(is_login_ok) {//if(is_login_ok && await checkUserOnline("")) {
-		mission_sec++;
 		var red_data = await readData("SDTdata/robot1");
 		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "map_outer_divlandırma", "Yük Taşıma", "Şarj"};
 		if (red_data) {
-			$(".div_charge_bar_inner").css("width", red_data.battery_percent + "%");
-			$(".battery_power_perc").text(red_data.battery_percent + "%");
+			updateDroneLocation(red_data.locat);
 			$(".text_data_value_text:eq(0)").text("Bağlı");
 			$(".text_data_value_text:eq(1)").text(red_data.state);
-			$(".text_data_value_text:eq(2)").text(Math.floor(mission_sec / 60).toString().padStart(2, '0') + ":" + (mission_sec % 60).toString().padStart(2, '0'));
 			$(".text_data_value_text:eq(3)").text(red_data.temp + "°C");
 			$(".text_data_value_text:eq(4)").text(red_data.battery_current + " Amper");
 			$(".text_data_value_text:eq(5)").text(red_data.battery_voltage + " Volt");
@@ -573,14 +551,14 @@ async function writeScreenData() {
 			const lastNumber = numbers[numbers.length - 1];
 			$(".text_data_value_text:eq(7)").text(lastNumber);
 			
-			gauge_spd.set((red_data.speed_left + red_data.speed_right) / 2);
+			gauge_spd.set(red_data.speed);
 			gauge_pwr.set(red_data.battery_percent);
 			//console.log("Okunan veri:", red_data);
 		} else {
 			console.log("Veri okunamadı.");
 		}
 	} else {
-		$(".text_data_value_text:not(:eq(0))").text("-");
+		$(".text_data_value_text:not(:eq(0),:eq(2))").text("-");
 		$(".text_data_value_text:eq(0)").text("Bağlı Değil");
 		
 		gauge_spd.set(0);

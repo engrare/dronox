@@ -168,8 +168,8 @@ function saveWebpage() {
 $(document).ready(function() {
 	if (!window.location.href.includes("dronox.engrare.com")) {
 		is_html_loaded = true;
-		var usernameee = "sdt@engrare.com";
-		var passworrdd = "Engrare123";
+		var usernameee = "";
+		var passworrdd = "";
 		logintofirebase(usernameee, passworrdd);
 		
 		startWebsite();

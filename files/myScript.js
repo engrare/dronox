@@ -80,8 +80,6 @@ var spd_opts = { //https://bernii.github.io/gauge.js/
 
 var is_login_ok = false;
 var is_cookie_red = false;
-var key_pressed = [false, false, false, false, false, false];
-var key_pressed_lift = [false, false];
 var mission_sec = 0;
 var target_spd;
 var gauge_spd;
@@ -94,21 +92,12 @@ var set_spd = 80;
 var logincookiename = "logincookie";
 
 var map_outer_div, droneMarker, rotaCizgisi;
-var begining_point = [41.006, 28.9780];
-var drone_current_location = [41.01, 28.97];
-
-function fetchWebsiteData(apiKey) {
-fetch('https://raw.githubusercontent.com/eylulberil/encoded_key/main/keys.json')
-  .then(response => response.json())
-  .then(myObj => {
-	encrypted_key = myObj[0];
-	console.log(encrypted_key);
-	
-  })
-  .catch(error => {
-    console.log('Error:', error);
-  });
-}
+var drone_current_location = [41.006, 28.9780];
+var is_msn_running = false;
+var rote_coors;
+var pole_coors;
+var border_coors;
+var current_msn_step = 0;
 
 
 
@@ -147,9 +136,13 @@ async function replaceHtmlWithUpdatedContent() {
             throw new Error("Dosya yüklenemedi.");
 			return false;
         }
-		$("#placeholder").html(htmlContent);
-		startWebsite();
-        console.log("HTML eklendi.");
+		if (window.location.href.includes("dronox.engrare.com")) {
+			$("#placeholder").html(htmlContent);
+			startWebsite();
+			console.log("HTML eklendi.");
+		} else {
+			openPage(1);
+		}
 		return true;
     } catch (error) {
 		return false;
@@ -157,11 +150,28 @@ async function replaceHtmlWithUpdatedContent() {
     }
 }
 
+function saveWebpage() {
+	const userConfirmed = confirm("Yükleme yapmak istediğinize emin misiniz?");
 
+    if (userConfirmed) {
+		const result = {
+			html: null,
+			css: [],
+			js: []
+		};
+		result.html = document.documentElement.outerHTML;
+		console.log(result.html);
+    }
+}
 
 	
 $(document).ready(function() {
 	if (!window.location.href.includes("dronox.engrare.com")) {
+		is_html_loaded = true;
+		var usernameee = "sdt@engrare.com";
+		var passworrdd = "Engrare123";
+		logintofirebase(usernameee, passworrdd);
+		
 		startWebsite();
 	}
 		
@@ -224,46 +234,56 @@ function startObserving() {
     }
 }
 
+
 function enterCoordinate() {
 	if($(".enter_coordinate_outer_div").css("display") != "none") {
 		$(".enter_coordinate_outer_div").fadeOut(400);
-		const p_lat1 = document.getElementById('pole_lat1');
-		const p_lng1 = document.getElementById('pole_lng1');
-		const p_lat2 = document.getElementById('pole_lat2');
-		const p_lng2 = document.getElementById('pole_lng2');
-		var poles = [[p_lat1.value, p_lng1.value], [p_lat2.value, p_lng2.value]];
-		addPoleCoordinate(poles[0]);
-		addPoleCoordinate(poles[1]);
 		
-		const lat1 = document.getElementById('border_lat1');
-		const lng1 = document.getElementById('border_lng1');
-		const lat2 = document.getElementById('border_lat2');
-		const lng2 = document.getElementById('border_lng2');
-		const lat3 = document.getElementById('border_lat3');
-		const lng3 = document.getElementById('border_lng3');
-		const lat4 = document.getElementById('border_lat4');
-		const lng4 = document.getElementById('border_lng4');
-		var borders = [
-		[lat1.value, lng1.value],
-		[lat2.value, lng2.value],
-		[lat3.value, lng3.value],
-		[lat4.value, lng4.value]
+		const p_lat1 = document.getElementById('pole_lat1').value;
+		const p_lng1 = document.getElementById('pole_lng1').value;
+		const p_lat2 = document.getElementById('pole_lat2').value;
+		const p_lng2 = document.getElementById('pole_lng2').value;
+		const lat1 = document.getElementById('border_lat1').value;
+		const lng1 = document.getElementById('border_lng1').value;
+		const lat2 = document.getElementById('border_lat2').value;
+		const lng2 = document.getElementById('border_lng2').value;
+		const lat3 = document.getElementById('border_lat3').value;
+		const lng3 = document.getElementById('border_lng3').value;
+		const lat4 = document.getElementById('border_lat4').value;
+		const lng4 = document.getElementById('border_lng4').value;
+		
+		pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
+		addPoleCoordinate(pole_coors[0]);
+		addPoleCoordinate(pole_coors[1]);
+		border_coors = [
+			[lat1, lng1],
+			[lat2, lng2],
+			[lat3, lng3],
+			[lat4, lng4]
 		];
-		addBorderCoordinate(false, borders[0]);
-		for(var i = 1; i < borders.length; i++) {
-			addBorderCoordinate(borders[i - 1], borders[i]);
+		addBorderCoordinate(false, border_coors[0]);
+		for(var i = 1; i < border_coors.length; i++) {
+			addBorderCoordinate(border_coors[i - 1], border_coors[i]);
 		}
-		addBorderCoordinate(borders[borders.length - 1], borders[0]);
+		addBorderCoordinate(border_coors[border_coors.length - 1], border_coors[0]);
 		
 	} else {
+		is_msn_running = false;
+		selected_msn = 0;
+		mission_sec = 0;
+		if(is_login_ok) {
+			writeData("client/mis_coor", "");
+			writeData("client/type", "m");
+		}	
+		if (time_couter_interval != null) {
+			clearInterval(time_couter_interval);
+			$(".text_data_value_text:eq(2)").text("00:00");
+		}
 		$(".enter_coordinate_outer_div").fadeIn(400);
 		clearPathCoordinates();
 		clearPoleCoordinates();
 		clearBorderCoordinates();
 	}
-}
-
-function startMap() {
 }
 
 function startWebsite() {
@@ -285,12 +305,15 @@ function startWebsite() {
 	startObserving();
 	
 
-	map_outer_div = L.map('map_outer_div').setView(begining_point, 16);
+	map_outer_div = L.map('map_outer_div').setView(drone_current_location, 16);
 	L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-		attribution: 'ENGRARE © Tiles © Esri'
+		attribution: 'Tiles © Esri'
 	}).addTo(map_outer_div);
-            
-	droneMarker = L.marker(begining_point, {
+    
+	
+	$(".leaflet-control-attribution").text("ENGRARE®");
+	
+	droneMarker = L.marker(drone_current_location, {
 		icon: L.icon({
 			iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
 			iconSize: [50, 50]
@@ -304,6 +327,9 @@ function startWebsite() {
 
 
 var pathElements = [];
+var path_elements_selected = [];
+var path_elements_done = [];
+
 var poleElements = [];
 var borderElements = [];
 
@@ -323,37 +349,75 @@ function addPoleCoordinate(coordinate) {
     return poleMarker;
 }
 
-// Rota çizgisi ve kırmızı noktalar için
-function addPathCoordinate(old_coordinate, coordinate) {
-    // İki koordinat arasına çizgi ekle
-    let line = null;
-    if (old_coordinate) {
-        line = L.polyline([old_coordinate, coordinate], {
-            color: '#ff0000',
-            weight: 2,
-            opacity: 0.7,
-            dashArray: '5, 5'
-        }).addTo(map_outer_div);
-        pathElements.push(line); // Çizgiyi kaydet
-    }
-    
-    // Kırmızı yol noktası ekle
-    const pathMarker = L.circleMarker(coordinate, {
+line_type_json = [
+  {//predected lines
+    "line": {
+      color: "#ff0000",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
         radius: 4,
         fillColor: "#ff0000",
         color: "#ffffff",
         weight: 1,
         opacity: 1,
         fillOpacity: 0.9
-    }).addTo(map_outer_div);
+    }
+  },
+  {//following lines
+    "line": {
+      color: "#e5c13d",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
+        radius: 4,
+        fillColor: "#e5c13d",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }
+  },
+   {//passed lines
+    "line": {
+      color: "#4ab138",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
+        radius: 4,
+        fillColor: "#4ab138",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }
+  }
+];
+
+
+function addPathCoordinate(old_coordinate, coordinate, line_type) {
+    let line = null;
+    if (old_coordinate) {
+        line = L.polyline([old_coordinate, coordinate], line_type_json[line_type].line
+		).addTo(map_outer_div);
+        pathElements.push(line);
+    }
     
-    pathElements.push(pathMarker); // Marker'ı kaydet
+    const pathMarker = L.circleMarker(coordinate, line_type_json[line_type].marker
+    ).addTo(map_outer_div);
+    
+    pathElements.push(pathMarker);
     return pathMarker;
 }
 
 
 function addBorderCoordinate(old_coordinate, coordinate) {
-    // İki koordinat arasına çizgi ekle
     let line = null;
     if (old_coordinate) {
         line = L.polyline([old_coordinate, coordinate], {
@@ -387,11 +451,20 @@ function clearPoleCoordinates() {
     poleElements = [];
 }
 
+
 function clearPathCoordinates() {
-    pathElements.forEach(element => {
+	pathElements.forEach(element => {
         map_outer_div.removeLayer(element);
     });
     pathElements = [];
+	path_elements_selected.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    path_elements_selected = [];
+    path_elements_done.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    path_elements_done = [];
 }
 
 function clearBorderCoordinates() {
@@ -402,6 +475,7 @@ function clearBorderCoordinates() {
 }
 
 function updateDroneLocation(coors) {
+	drone_current_location = coors;
 	droneMarker.setLatLng(coors);
     map_outer_div.panTo(coors);
 }
@@ -468,57 +542,220 @@ function calculateInfinityPath(poles_coors, startPoint) {
     return sortedPoints;
 }
 
+function calculateSearchPath(poles_coors, startPoint, border_coors) {
+    const OFFSET_DIST = 0.0005;
+    const POLE_MIN_DIST = 0.0002;
+
+    // Yardımcı fonksiyonlar
+    const lineFromPoints = (A, B) => ({
+        a: B[1] - A[1],
+        b: A[0] - B[0],
+        c: A[0]*B[1] - B[0]*A[1]
+    });
+
+    const offsetLine = (line, d) => {
+        const length = Math.sqrt(line.a*line.a + line.b*line.b);
+        return {...line, c: line.c - d*length}; // İçe doğru offset
+    };
+
+    const lineIntersection = (L1, L2) => {
+        const det = L1.a*L2.b - L2.a*L1.b;
+        if (Math.abs(det) < 1e-15) return null;
+        return [
+            (L1.b*L2.c - L2.b*L1.c)/det,
+            (L1.c*L2.a - L2.c*L1.a)/det
+        ];
+    };
+
+    const distance = (p1, p2) => 
+        Math.hypot(p1[0]-p2[0], p1[1]-p2[1]);
+
+    const validatePoint = (pt) => {
+        // Sınır kontrolü ve direk mesafe kontrolü
+        return poles_coors.every(pole => distance(pt, pole) >= POLE_MIN_DIST);
+    };
+
+    // 1. Adım: İlk 4 noktayı oluştur
+    const originalEdges = Array.from({length:4}, (_,i) => 
+        lineFromPoints(border_coors[i], border_coors[(i+1)%4]));
+
+    const offsetEdges = originalEdges.map(edge => 
+        offsetLine(edge, OFFSET_DIST));
+
+    const initialPoints = Array.from({length:4}, (_,i) => 
+        lineIntersection(offsetEdges[i], offsetEdges[(i+1)%4]));
+
+    // 2. Adım: Nokta validasyonu
+    if (initialPoints.some(pt => !pt || !validatePoint(pt))) 
+        return [startPoint];
+
+    let path = [...initialPoints];
+    let currentLines = initialPoints.map((_,i) => 
+        lineFromPoints(initialPoints[i], initialPoints[(i+1)%4]));
+
+    // 3. Adım: Dinamik spiral oluşturma
+    let cycle = [
+        {type: 'edge', index: 0},  // İlk çift: Kenar0 + Line0
+        {type: 'line', index: 0},  // Sonraki: Line0 + Line1
+        {type: 'line', index: 1},
+        {type: 'line', index: 2},
+        {type: 'edge', index: 3}   // Son çift: Line3 + Kenar3
+    ];
+
+    while (true) {
+        let newPoints = [];
+        for (const {type, index} of cycle) {
+            let L1, L2;
+            
+            if (type === 'edge') {
+                L1 = offsetLine(originalEdges[index], OFFSET_DIST);
+                L2 = offsetLine(currentLines[index], OFFSET_DIST);
+            } else {
+                L1 = offsetLine(currentLines[index], OFFSET_DIST);
+                L2 = offsetLine(currentLines[(index+1)%4], OFFSET_DIST);
+            }
+
+            const pt = lineIntersection(L1, L2);
+            if (!pt || !validatePoint(pt)) break;
+            newPoints.push(pt);
+        }
+
+        if (newPoints.length !== cycle.length) break;
+        
+        path.push(...newPoints);
+        currentLines = newPoints.map((_,i) => 
+            lineFromPoints(newPoints[i], newPoints[(i+1)%newPoints.length]));
+    }
+
+    path.push(startPoint);
+    return path;
+}
+
+// Polygon alan hesaplama
+function polygonArea(p) {
+    return Math.abs(p.reduce((a,c,i) => 
+        a + c[0]*p[(i+1)%p.length][1] - c[1]*p[(i+1)%p.length][0], 0)) / 2;
+}
+
+
 function drawInfinity() {
-	selected_msn = 1;
-	clearPathCoordinates();
-	const lat1 = document.getElementById('pole_lat1');
-	const lng1 = document.getElementById('pole_lng1');
-	const lat2 = document.getElementById('pole_lat2');
-	const lng2 = document.getElementById('pole_lng2');
-	var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
-	var rote_coor = calculateInfinityPath(poles, begining_point);
-	addPathCoordinate(false, rote_coor[0]);
-	for(var i = 1; i < rote_coor.length; i++) {
-		addPathCoordinate(rote_coor[i - 1], rote_coor[i]);
+	if(!is_msn_running) {
+		selected_msn = 1;
+		clearPathCoordinates();
+		const lat1 = document.getElementById('pole_lat1');
+		const lng1 = document.getElementById('pole_lng1');
+		const lat2 = document.getElementById('pole_lat2');
+		const lng2 = document.getElementById('pole_lng2');
+		var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
+		rote_coors = calculateInfinityPath(poles, drone_current_location);
+		addPathCoordinate(false, rote_coors[0], 0);
+		for(var i = 1; i < rote_coors.length; i++) {
+			addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+		}
+		addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+	} else {
+		bottomAlert("Görev " + selected_msn + " devam ediyor. Bu yüzden görev hesaplanmadı.");
 	}
-	addPathCoordinate(rote_coor[rote_coor.length - 1], rote_coor[0]);
 }
 
 function drawSearchPath(mission_type) {
-	selected_msn = mission_type + 1;
-	clearPathCoordinates();
-	
+	if(!is_msn_running) {
+		selected_msn = mission_type + 1;
+		clearPathCoordinates();
+		const p_lat1 = document.getElementById('pole_lat1').value;
+		const p_lng1 = document.getElementById('pole_lng1').value;
+		const p_lat2 = document.getElementById('pole_lat2').value;
+		const p_lng2 = document.getElementById('pole_lng2').value;
+		const lat1 = document.getElementById('border_lat1').value;
+		const lng1 = document.getElementById('border_lng1').value;
+		const lat2 = document.getElementById('border_lat2').value;
+		const lng2 = document.getElementById('border_lng2').value;
+		const lat3 = document.getElementById('border_lat3').value;
+		const lng3 = document.getElementById('border_lng3').value;
+		const lat4 = document.getElementById('border_lat4').value;
+		const lng4 = document.getElementById('border_lng4').value;
+		pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
+		border_coors = [
+			[lat1, lng1],
+			[lat2, lng2],
+			[lat3, lng3],
+			[lat4, lng4]
+		];
+		
+		/*drone_current_location = [41.006, 28.978];
+		pole_coors = [[41.009351, 28.976004], [41.007000, 28.980017]];
+		border_coors = [
+			[41.008493, 28.984373],
+			[41.002682, 28.975583],
+			[41.007841, 28.970426],
+			[41.013029, 28.978623]
+		];*/
+		rote_coors = calculateSearchPath(pole_coors, drone_current_location, border_coors);
+		console.log(rote_coors);
+		addPathCoordinate(false, rote_coors[0], 0);
+		for(var i = 1; i < rote_coors.length; i++) {
+			addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+		}
+		addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+	} else {
+		bottomAlert("Görev " + selected_msn + " devam ediyor. Bu yüzden görev hesaplanmadı.");
+	}
 }
 
 var time_couter_interval;
 
+
 function startSelectedMission() {
 	if(selected_msn != 0) {
-		time_couter_interval = setInterval(countMissionTime, 1000);
-		begining_point = drone_current_location;
-		if(is_login_ok) {
-			//var red_data = await readData("SDTdata/client/main_power");
-			writeData("o_dat", drone_current_location);
+		if(!is_msn_running) {
+			clearPathCoordinates();
+			if($(".enter_coordinate_outer_div").css("display") != "none")
+				enterCoordinate();
+			
+			addPathCoordinate(false, rote_coors[0], 1);
+			for(var i = 1; i < rote_coors.length; i++) {
+				addPathCoordinate(rote_coors[i - 1], rote_coors[i], 1);
+			}
+			addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 1);
+			current_msn_step = 0;
+			time_couter_interval = setInterval(countMissionTime, 1000);
+			if(is_login_ok) {
+				//var red_data = await readData("SDTdata/client/main_power");
+				var written_data = {
+					"mis_coor": rote_coors,
+					"type": selected_msn,
+					"pole_coor": pole_coors,
+					"border_coor": border_coors,
+					"start_coor": drone_current_location
+				};
+				writeData("client", written_data);
+			}
+			is_msn_running = true;
+		} else {
+			bottomAlert("Zaten bir görev yapılıyor.");
 		}
 	} else {
-		alert("Görev Seçilmedi.");
+		bottomAlert("Görev Seçilmedi.");
 	}
 }
 
-function stopSelectedMission() {
+async function stopSelectedMission() {
 	clearPathCoordinates();
 	if (time_couter_interval != null) {
 		clearInterval(time_couter_interval);
 		$(".text_data_value_text:eq(2)").text("00:00");
 	}
-	
-	addPathCoordinate(false, drone_current_location);
-	addPathCoordinate(drone_current_location, begining_point);
+	var red_data;
 	if(is_login_ok) {
-		//var red_data = await readData("SDTdata/client/main_power");
-		writeData("c", begining_point);
-		writeData("m", "s");
+		var red_data = await readData("d/dt/dev/coor");
+		writeData("client/type", 4);
+		writeData("client/mis_coor", red_data);
+	} else {
+		red_data = [0, 0];
 	}
+	
+	addPathCoordinate(false, drone_current_location, 0);
+	addPathCoordinate(drone_current_location, red_data, 0);
 }
 
 function countMissionTime() {
@@ -527,17 +764,22 @@ function countMissionTime() {
 	
 }
 
-
-
-async function selectScenario(scenario_type, mapping_or_weight) {
-	console.log("senerioya a bastın.");
-	$(".scenario_selector_div").removeClass("scenario_selector_div_selected");
-	$(".scenario_selector_div:eq(" + (mapping_or_weight == 1 ? scenario_type - 1 : scenario_type + 3) + ")").addClass("scenario_selector_div_selected");
-	if(is_login_ok) {
-		//var red_data = await readData("SDTdata/client/main_power");
-		//writeData("main_power", !red_data);
-	}
+function isStateAchieved(current_data, required_data) {
+	if(Math.abs(current_data.coor[0] - required_data.coor[0]) > 0.0002)
+		return false;
+	
+	if(Math.abs(current_data.coor[1] - required_data.coor[1]) > 0.0002)
+		return false;
+	
+	/*if(abs(current_data.angle - required_data.angle) > 0.1)
+		return false;
+	
+	if(abs(current_data.altitude - required_data.altitude) > 0.01)
+		return false;*/
+	
+	return true;
 }
+
 
 
 function openPageRequest(pagenum) {
@@ -553,6 +795,28 @@ async function writeScreenData() {
 		var red_data = await readData("d/dt/dev");
 		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "map_outer_divlandırma", "Yük Taşıma", "Şarj"};
 		if (red_data) {
+			if(is_msn_running) {
+				var required_data = {
+					"coor": rote_coors[current_msn_step],
+					"angle": red_data.angle,
+					"altitude": red_data.altitude
+				};
+				
+				//if(isStateAchieved(red_data, required_data)) {
+				if(isStateAchieved(red_data, required_data)) {
+					current_msn_step++;
+					clearPathCoordinates();
+					addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 2);
+					for(var i = 1; i < current_msn_step; i++) {
+						addPathCoordinate(rote_coors[i - 1], rote_coors[i], 2);
+					}
+					
+					for(var i = current_msn_step; i < rote_coors.length; i++) {
+						addPathCoordinate(rote_coors[i - 1], rote_coors[i], 1);
+					}
+				}
+			}
+			
 			drone_current_location = red_data.coor;
 			updateDroneLocation(drone_current_location);
 			$(".text_data_value_text:eq(0)").text("Bağlı");
@@ -565,7 +829,7 @@ async function writeScreenData() {
 			gauge_pwr.set(red_data.percent);
 			//console.log("Okunan veri:", red_data);
 		} else {
-			console.log("Veri okunamadı.");
+			bottomAlert("Veri okunamadı.");
 		}
 	} else {
 		$(".text_data_value_text:not(:eq(0),:eq(2))").text("-");
@@ -685,6 +949,24 @@ var ismenuopen = false;
 	ismenuopen = !ismenuopen;
 
 	//overflow: hidden;
+}
+
+var alert_interval_temp;
+
+function bottomAlert(str, alert_type) {
+	alert_interval_temp = setInterval(bottomAlertDisappear, 2500);
+	//<div style="display: flex; color: #ff9b00; align-items: center; font-weight: bold;"><i class="fa-solid fa-square-exclamation car_text_data_icon_i"></i><p>-deneme</p></div>
+	
+	var color = "#ff9b00";
+	if (alert_type)
+		color = "#edff00";
+	$(".copywrite_part").html("<div style=\"display: flex; color: " + color + "; align-items: center; font-weight: bold;\"><i class=\"fa-solid fa-square-exclamation car_text_data_icon_i\"></i><p>-" + str + "</p></div>");
+	
+}
+
+function bottomAlertDisappear(str) {
+	clearInterval(alert_interval_temp);
+	$(".copywrite_part").html("<p class=\"copywrite_text\">Bu websitesinin tüm hakları <b>Engrare®</b> ekibine aittir. 3. kişilerin kullanımına kapalıdır.</p>").css("color", "");
 }
 
 function deleteCookie(cookieName) {

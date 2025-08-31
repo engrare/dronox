@@ -92,7 +92,7 @@ var set_spd = 80;
 var logincookiename = "logincookie";
 
 var map_outer_div, droneMarker, rotaCizgisi;
-var drone_current_location = [41.006, 28.9780];
+var drone_current_location = [40.7384617, 30.0986767];
 var is_msn_running = false;
 var rote_coors;
 var pole_coors;
@@ -168,8 +168,8 @@ function saveWebpage() {
 $(document).ready(function() {
 	if (!window.location.href.includes("dronox.engrare.com")) {
 		is_html_loaded = true;
-		var usernameee = "";
-		var passworrdd = "";
+		var usernameee = "sdt@engrare.com";
+		var passworrdd = "Engrare123";
 		logintofirebase(usernameee, passworrdd);
 		
 		startWebsite();
@@ -236,59 +236,25 @@ function startObserving() {
 
 
 function enterCoordinate() {
-	if($(".enter_coordinate_outer_div").css("display") != "none") {
-		$(".enter_coordinate_outer_div").fadeOut(400);
-		
-		const p_lat1 = document.getElementById('pole_lat1').value;
-		const p_lng1 = document.getElementById('pole_lng1').value;
-		const p_lat2 = document.getElementById('pole_lat2').value;
-		const p_lng2 = document.getElementById('pole_lng2').value;
-		const lat1 = document.getElementById('border_lat1').value;
-		const lng1 = document.getElementById('border_lng1').value;
-		const lat2 = document.getElementById('border_lat2').value;
-		const lng2 = document.getElementById('border_lng2').value;
-		const lat3 = document.getElementById('border_lat3').value;
-		const lng3 = document.getElementById('border_lng3').value;
-		const lat4 = document.getElementById('border_lat4').value;
-		const lng4 = document.getElementById('border_lng4').value;
-		
-		pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
-		addPoleCoordinate(pole_coors[0]);
-		addPoleCoordinate(pole_coors[1]);
-		border_coors = [
-			[lat1, lng1],
-			[lat2, lng2],
-			[lat3, lng3],
-			[lat4, lng4]
-		];
-		addBorderCoordinate(false, border_coors[0]);
-		for(var i = 1; i < border_coors.length; i++) {
-			addBorderCoordinate(border_coors[i - 1], border_coors[i]);
-		}
-		addBorderCoordinate(border_coors[border_coors.length - 1], border_coors[0]);
-		
-	} else {
-		is_msn_running = false;
-		selected_msn = 0;
-		mission_sec = 0;
-		if(is_login_ok) {
-			writeData("client/mis_coor", "");
-			writeData("client/type", "m");
-		}	
-		if (time_couter_interval != null) {
-			clearInterval(time_couter_interval);
-			$(".text_data_value_text:eq(2)").text("00:00");
-		}
-		$(".enter_coordinate_outer_div").fadeIn(400);
-		clearPathCoordinates();
-		clearPoleCoordinates();
-		clearBorderCoordinates();
-	}
+	const p_lat1 = document.getElementById('pole_lat1').value;
+	const p_lng1 = document.getElementById('pole_lng1').value;
+	const p_lat2 = document.getElementById('pole_lat2').value;
+	const p_lng2 = document.getElementById('pole_lng2').value;
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	
+	drone_current_location = [drone_lat, drone_lng];
+	updateDroneLocation(drone_current_location);
+	
+	pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
+	clearPoleCoordinates();
+	addPoleCoordinate(pole_coors[0]);
+	addPoleCoordinate(pole_coors[1]);
 }
 
 function startWebsite() {
 	openPage(1);
-	target_spd = document.getElementById('speed_meter_gauge');
+	/*target_spd = document.getElementById('speed_meter_gauge');
 	gauge_spd = new Gauge(target_spd).setOptions(spd_opts);
 	gauge_spd.maxValue = 30;
 	gauge_spd.setMinValue(0);
@@ -301,11 +267,11 @@ function startWebsite() {
 	gauge_pwr.maxValue = 100;
 	gauge_pwr.setMinValue(0);
 	gauge_pwr.animationSpeed = 24;
-	gauge_pwr.set(0);
+	gauge_pwr.set(0);*/
 	startObserving();
 	
 
-	map_outer_div = L.map('map_outer_div').setView(drone_current_location, 16);
+	map_outer_div = L.map('map_outer_div').setView(drone_current_location, 20);
 	L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 		attribution: 'Tiles © Esri'
 	}).addTo(map_outer_div);
@@ -321,7 +287,7 @@ function startWebsite() {
 	}).addTo(map_outer_div);
 	
 
-	setInterval(writeScreenData, 1000);
+	//setInterval(writeScreenData, 1000);
 }
 
 
@@ -480,7 +446,7 @@ function updateDroneLocation(coors) {
     map_outer_div.panTo(coors);
 }
 
-function calculateInfinityPath(poles_coors, startPoint) {
+function calculateInfinityPath(poles_coors, startPoint, steps) {
     
     const [p1, p2] = poles_coors.map(c => c.map(Number));
     const [startLat, startLng] = startPoint.map(Number);
@@ -498,8 +464,6 @@ function calculateInfinityPath(poles_coors, startPoint) {
     const center = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2];
     const a = distance / Math.sqrt(2);
 
-    // Tüm noktaları oluştur
-    const steps = 21;
     const allPoints = [];
     
     // Parametrik denklemlerle tüm noktaları oluştur
@@ -540,6 +504,26 @@ function calculateInfinityPath(poles_coors, startPoint) {
     sortedPoints.push([startLat, startLng]);
 
     return sortedPoints;
+}
+
+function processMatrix(matrix) {
+    let reversed = matrix.reverse();
+    for (let i = 0; i < reversed.length; i++) {
+        reversed[i] = removeConsecutiveDuplicates(reversed[i]);
+    }
+    return reversed;
+}
+
+function removeConsecutiveDuplicates(arr) {
+    let stack = [];
+    for (let num of arr) {
+        if (stack.length > 0 && stack[stack.length - 1] === num) {
+            stack.pop();
+        } else {
+            stack.push(num);
+        }
+    }
+    return stack;
 }
 
 function calculateSearchPath(poles_coors, startPoint, border_coors) {
@@ -639,23 +623,23 @@ function polygonArea(p) {
 
 
 function drawInfinity() {
-	if(!is_msn_running) {
-		selected_msn = 1;
-		clearPathCoordinates();
-		const lat1 = document.getElementById('pole_lat1');
-		const lng1 = document.getElementById('pole_lng1');
-		const lat2 = document.getElementById('pole_lat2');
-		const lng2 = document.getElementById('pole_lng2');
-		var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
-		rote_coors = calculateInfinityPath(poles, drone_current_location);
-		addPathCoordinate(false, rote_coors[0], 0);
-		for(var i = 1; i < rote_coors.length; i++) {
-			addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
-		}
-		addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
-	} else {
-		bottomAlert("Görev " + selected_msn + " devam ediyor. Bu yüzden görev hesaplanmadı.");
+	clearPathCoordinates();
+	const lat1 = document.getElementById('pole_lat1');
+	const lng1 = document.getElementById('pole_lng1');
+	const lat2 = document.getElementById('pole_lat2');
+	const lng2 = document.getElementById('pole_lng2');
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	const inf_dot_count = document.getElementById('dot_count').value;
+	
+	drone_current_location = [drone_lat, drone_lng];
+	var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
+	rote_coors = calculateInfinityPath(poles, drone_current_location, inf_dot_count);
+	addPathCoordinate(false, rote_coors[0], 0);
+	for(var i = 1; i < rote_coors.length; i++) {
+		addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
 	}
+	addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
 }
 
 function drawSearchPath(mission_type) {
@@ -705,38 +689,48 @@ function drawSearchPath(mission_type) {
 var time_couter_interval;
 
 
-function startSelectedMission() {
-	if(selected_msn != 0) {
-		if(!is_msn_running) {
-			clearPathCoordinates();
-			if($(".enter_coordinate_outer_div").css("display") != "none")
-				enterCoordinate();
-			
-			addPathCoordinate(false, rote_coors[0], 1);
-			for(var i = 1; i < rote_coors.length; i++) {
-				addPathCoordinate(rote_coors[i - 1], rote_coors[i], 1);
-			}
-			addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 1);
-			current_msn_step = 0;
-			time_couter_interval = setInterval(countMissionTime, 1000);
-			if(is_login_ok) {
-				//var red_data = await readData("SDTdata/client/main_power");
-				var written_data = {
-					"mis_coor": rote_coors,
-					"type": selected_msn,
-					"pole_coor": pole_coors,
-					"border_coor": border_coors,
-					"start_coor": drone_current_location
-				};
-				writeData("client", written_data);
-			}
-			is_msn_running = true;
-		} else {
-			bottomAlert("Zaten bir görev yapılıyor.");
-		}
-	} else {
-		bottomAlert("Görev Seçilmedi.");
+function downloadMissionCoors() {
+	downloadCoors(rote_coors);
+}
+
+function downloadCoors(coors) {
+	// Waypoints dosyasının içeriğini oluştur
+	let content = "QGC WPL 110\n";
+	
+	// İlk waypoint (HOME)
+	if (coors.length > 0) {
+		content += `0\t1\t0\t16\t0\t0\t0\t0\t${coors[0][0]}\t${coors[0][1]}\t100.720000\t1\n`;
 	}
+	
+	// Takeoff komutu
+	content += "1\t0\t3\t22\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t2.000000\t1\n";
+	
+	// Diğer waypointler
+	for (let i = 1; i < coors.length; i++) {
+		content += `${i+1}\t0\t3\t16\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${coors[i][0]}\t${coors[i][1]}\t3.000000\t1\n`;
+	}
+	
+	// Return-to-launch komutu
+	content += `${coors.length+1}\t0\t3\t20\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t3.000000\t1`;
+	
+	// Blob oluştur
+	const blob = new Blob([content], { type: 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	
+	// İndirme için link oluştur
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'output.waypoints';
+	document.body.appendChild(a);
+	a.click();
+	
+	// Temizlik
+	setTimeout(() => {
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}, 100);
+	
+	return content;
 }
 
 async function stopSelectedMission() {

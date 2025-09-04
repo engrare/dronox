@@ -174,7 +174,18 @@ $(document).ready(function() {
 		
 		startWebsite();
 	}
-		
+	const savedData = readCookie('savedCoordinates');
+	if (savedData) {
+		const coordinates = JSON.parse(savedData);
+		document.getElementById('pole_lat1').value = coordinates.p_lat1;
+		document.getElementById('pole_lng1').value = coordinates.p_lng1;
+		document.getElementById('pole_lat2').value = coordinates.p_lat2;
+		document.getElementById('pole_lng2').value = coordinates.p_lng2;
+		document.getElementById('border_lat1').value = coordinates.drone_lat;
+		document.getElementById('border_lng1').value = coordinates.drone_lng;
+		document.getElementById('dot_count').value = coordinates.inf_dot_count;
+		document.getElementById('pole_dist').value = coordinates.inf_pole_dist;
+	}
 	
 	
 	$("#speedSlider").on("input change", function() {
@@ -242,7 +253,22 @@ function enterCoordinate() {
 	const p_lng2 = document.getElementById('pole_lng2').value;
 	const drone_lat = document.getElementById('border_lat1').value;
 	const drone_lng = document.getElementById('border_lng1').value;
-	
+	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
+
+	// Tüm değerleri JSON formatında tek cookie'de sakla
+	const coordinates = {
+		p_lat1,
+		p_lng1,
+		p_lat2,
+		p_lng2,
+		drone_lat,
+		drone_lng,
+		inf_dot_count,
+		inf_pole_dist
+	};
+
+	setCookie('savedCoordinates', JSON.stringify(coordinates), 10);
 	drone_current_location = [drone_lat, drone_lng];
 	updateDroneLocation(drone_current_location);
 	
@@ -446,7 +472,121 @@ function updateDroneLocation(coors) {
     map_outer_div.panTo(coors);
 }
 
-function calculateInfinityPath(poles_coors, startPoint, steps) {
+function calculateHalfCirclePath(poles_coors, startPoint, steps, radiusInMeters = 10) {
+    const [p1, p2] = poles_coors.map(c => c.map(Number));
+    const [startLat, startLng] = startPoint.map(Number);
+    
+    if ([...p1, ...p2, startLat, startLng].some(isNaN)) {
+        console.error("Geçersiz koordinatlar!");
+        return [];
+    }
+
+    // Yardımcı fonksiyon: İki nokta arasındaki yönü hesapla (bearing)
+    function getBearing(lat1, lng1, lat2, lng2) {
+        const lat1Rad = lat1 * Math.PI / 180;
+        const lat2Rad = lat2 * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const y = Math.sin(dLng) * Math.cos(lat2Rad);
+        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+        let bearing = Math.atan2(y, x);
+        return (bearing * 180 / Math.PI + 360) % 360;
+    }
+
+    // Yardımcı fonksiyon: Belirli bir yönde ve mesafede nokta hesapla
+    function getPointAtDistance(lat, lng, distance, bearing) {
+        const R = 6371e3;
+        const lat1 = lat * Math.PI / 180;
+        const lng1 = lng * Math.PI / 180;
+        const brng = bearing * Math.PI / 180;
+        const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance/R) +
+                      Math.cos(lat1) * Math.sin(distance/R) * Math.cos(brng));
+        const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(distance/R) * Math.cos(lat1),
+                          Math.cos(distance/R) - Math.sin(lat1) * Math.sin(lat2));
+        return [lat2 * 180 / Math.PI, (lng2 * 180 / Math.PI + 540) % 360 - 180];
+    }
+
+    // İki nokta arasındaki çizgiye göre bir noktanın hangi tarafta olduğunu belirle
+    function getSideOfLine(lat1, lng1, lat2, lng2, latS, lngS) {
+        const d = (lngS - lng1) * (lat2 - lat1) - (latS - lat1) * (lng2 - lng1);
+        return d > 0 ? 1 : -1;
+    }
+
+    // İki nokta arasındaki mesafeyi hesapla (metre cinsinden)
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371e3;
+        const lat1Rad = lat1 * Math.PI / 180;
+        const lat2Rad = lat2 * Math.PI / 180;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        return R * c;
+    }
+
+    const center = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    const side = getSideOfLine(p1[0], p1[1], p2[0], p2[1], startLat, startLng);
+    
+    // Hangi direğin daha yakın olduğunu bul
+    const d1 = calculateDistance(startLat, startLng, p1[0], p1[1]);
+    const d2 = calculateDistance(startLat, startLng, p2[0], p2[1]);
+    const [firstPole, secondPole] = d1 < d2 ? [p1, p2] : [p2, p1];
+    
+    const path = [];
+    const poleDistance = calculateDistance(p1[0], p1[1], p2[0], p2[1]);
+    const safeRadius = Math.min(radiusInMeters, poleDistance / 2 - 1);
+    
+    // İlk direğin etrafında dön
+    const bearingToOtherPole1 = getBearing(firstPole[0], firstPole[1], 
+                                         firstPole === p1 ? p2[0] : p1[0], 
+                                         firstPole === p1 ? p2[1] : p1[1]);
+    
+    let startBearing1, endBearing1;
+    if (side === 1) {
+        startBearing1 = bearingToOtherPole1 + 90;
+        endBearing1 = startBearing1 + 180;
+    } else {
+        startBearing1 = bearingToOtherPole1 - 90;
+        endBearing1 = startBearing1 - 180;
+    }
+    
+    for (let i = 0; i <= steps/2; i++) {
+        const bearing = startBearing1 + (endBearing1 - startBearing1) * (i / (steps/2));
+        const point = getPointAtDistance(firstPole[0], firstPole[1], safeRadius, (bearing + 360) % 360);
+        path.push(point);
+    }
+    
+    path.push(center);
+    
+    // İkinci direğin etrafında dön
+    const bearingToOtherPole2 = getBearing(secondPole[0], secondPole[1], 
+                                          secondPole === p1 ? p2[0] : p1[0], 
+                                          secondPole === p1 ? p2[1] : p1[1]);
+    
+    let startBearing2, endBearing2;
+    if (side === 1) {
+        startBearing2 = bearingToOtherPole2 - 90;
+        endBearing2 = startBearing2 - 180;
+    } else {
+        startBearing2 = bearingToOtherPole2 + 90;
+        endBearing2 = startBearing2 + 180;
+    }
+    
+    for (let i = 0; i <= steps/2; i++) {
+        const bearing = startBearing2 + (endBearing2 - startBearing2) * (i / (steps/2));
+        const point = getPointAtDistance(secondPole[0], secondPole[1], safeRadius, (bearing + 360) % 360);
+        path.push(point);
+    }
+    
+    path.push([startLat, startLng]);
+    
+    return path;
+}
+
+function calculateInfinityPath(poles_coors, startPoint, steps,  radiusInMeters = 10) {
     
     const [p1, p2] = poles_coors.map(c => c.map(Number));
     const [startLat, startLng] = startPoint.map(Number);
@@ -624,17 +764,39 @@ function polygonArea(p) {
 
 function drawInfinity() {
 	clearPathCoordinates();
-	const lat1 = document.getElementById('pole_lat1');
-	const lng1 = document.getElementById('pole_lng1');
-	const lat2 = document.getElementById('pole_lat2');
-	const lng2 = document.getElementById('pole_lng2');
+	const lat1 = document.getElementById('pole_lat1').value;
+	const lng1 = document.getElementById('pole_lng1').value;
+	const lat2 = document.getElementById('pole_lat2').value;
+	const lng2 = document.getElementById('pole_lng2').value;
 	const drone_lat = document.getElementById('border_lat1').value;
 	const drone_lng = document.getElementById('border_lng1').value;
 	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
 	
 	drone_current_location = [drone_lat, drone_lng];
-	var poles = [[lat1.value, lng1.value], [lat2.value, lng2.value]];
-	rote_coors = calculateInfinityPath(poles, drone_current_location, inf_dot_count);
+	var poles = [[lat1, lng1], [lat2, lng2]];
+	rote_coors = calculateInfinityPath(poles, drone_current_location, inf_dot_count, inf_pole_dist);
+	addPathCoordinate(false, rote_coors[0], 0);
+	for(var i = 1; i < rote_coors.length; i++) {
+		addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+	}
+	addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+}
+
+function drawCirclePath() {
+	clearPathCoordinates();
+	const lat1 = document.getElementById('pole_lat1').value;
+	const lng1 = document.getElementById('pole_lng1').value;
+	const lat2 = document.getElementById('pole_lat2').value;
+	const lng2 = document.getElementById('pole_lng2').value;
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
+	
+	drone_current_location = [drone_lat, drone_lng];
+	var poles = [[lat1, lng1], [lat2, lng2]];
+	rote_coors = calculateHalfCirclePath(poles, drone_current_location, inf_dot_count, inf_pole_dist);
 	addPathCoordinate(false, rote_coors[0], 0);
 	for(var i = 1; i < rote_coors.length; i++) {
 		addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);

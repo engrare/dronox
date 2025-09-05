@@ -174,18 +174,7 @@ $(document).ready(function() {
 		
 		startWebsite();
 	}
-	const savedData = readCookie('savedCoordinates');
-	if (savedData) {
-		const coordinates = JSON.parse(savedData);
-		document.getElementById('pole_lat1').value = coordinates.p_lat1;
-		document.getElementById('pole_lng1').value = coordinates.p_lng1;
-		document.getElementById('pole_lat2').value = coordinates.p_lat2;
-		document.getElementById('pole_lng2').value = coordinates.p_lng2;
-		document.getElementById('border_lat1').value = coordinates.drone_lat;
-		document.getElementById('border_lng1').value = coordinates.drone_lng;
-		document.getElementById('dot_count').value = coordinates.inf_dot_count;
-		document.getElementById('pole_dist').value = coordinates.inf_pole_dist;
-	}
+
 	
 	
 	$("#speedSlider").on("input change", function() {
@@ -295,6 +284,19 @@ function startWebsite() {
 	gauge_pwr.animationSpeed = 24;
 	gauge_pwr.set(0);*/
 	startObserving();
+	
+	const savedData = readCookie('savedCoordinates');
+	if (savedData) {
+		const coordinates = JSON.parse(savedData);
+		document.getElementById('pole_lat1').value = coordinates.p_lat1;
+		document.getElementById('pole_lng1').value = coordinates.p_lng1;
+		document.getElementById('pole_lat2').value = coordinates.p_lat2;
+		document.getElementById('pole_lng2').value = coordinates.p_lng2;
+		document.getElementById('border_lat1').value = coordinates.drone_lat;
+		document.getElementById('border_lng1').value = coordinates.drone_lng;
+		document.getElementById('dot_count').value = coordinates.inf_dot_count;
+		document.getElementById('pole_dist').value = coordinates.inf_pole_dist;
+	}
 	
 
 	map_outer_div = L.map('map_outer_div').setView(drone_current_location, 20);

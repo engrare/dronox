@@ -1,763 +1,1153 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ocean Planner</title>
+//Copyright 2025 Kaya Sertel & ENGRARE®. All Rights Reserved.
+var spd_opts = { //https://bernii.github.io/gauge.js/
+	  angle: -0.17, // The span of the gauge arc
+	  lineWidth: 0.19, // The line thickness
+	  radiusScale: 0.97, // Relative radius
+	  staticLabels: {
+		  font: "13px sans-serif",  // Specifies font
+		  labels: [0, 5, 10, 15, 20, 25, 30],  // Print labels at these values
+		  color: "#000000",  // Optional: Label text color
+		  fractionDigits: 0  // Optional: Numerical precision. 0=round off.
+	  },
+	  pointer: {
+		length: 0.56, // // Relative to gauge radius
+		strokeWidth: 0.068, // The thickness
+		color: '#000000' // Fill color
+	  },
+	  limitMax: false,     // If false, max value increases automatically if value > maxValue
+	  limitMin: false,     // If true, the min value of the gauge will be fixed
+	  colorStart: '#6FADCF',   // Colors
+	  colorStop: '#8FC0DA',    // just experiment with them
+	  strokeColor: '#E0E0E0',  // to see which ones work best for you
+	  generateGradient: true,
+	  highDpiSupport: true,     // High resolution support
+	  // renderTicks is Optional
+	  renderTicks: {
+		divisions: 6,
+		divWidth: 2.4,
+		divLength: 0.67,
+		divColor: '#333333',
+		subDivisions: 5,
+		subLength: 0.62,
+		subWidth: 1,
+		subColor: '#666666'
+	  }
+	  
+	};
+	
+	var power_opts = {
+  angle: -0.2, // The span of the gauge arc
+  lineWidth: 0.2, // The line thickness
+  radiusScale: 0.97, // Relative radius
+  pointer: {
+    length: 0.56, // // Relative to gauge radius
+    strokeWidth: 0.075, // The thickness
+    color: '#aaedf6' // Fill color
+  },
+  staticLabels: {
+	  font: "13px sans-serif",  // Specifies font
+	  labels: [0, 20, 40, 60, 80, 100],  // Print labels at these values
+	  color: "#000000",  // Optional: Label text color
+	  fractionDigits: 0  // Optional: Numerical precision. 0=round off.
+  },
+  limitMax: false,     // If false, max value increases automatically if value > maxValue
+  limitMin: false,     // If true, the min value of the gauge will be fixed
+  colorStart: '#6F6EA0',   // Colors
+  colorStop: '#C0C0DB',    // just experiment with them
+  strokeColor: '#ffffff00',  // to see which ones work best for you
+  staticZones: [
+   {strokeStyle: "#dd3232", min: 0, max: 20}, // Red from 100 to 130
+   {strokeStyle: "#FFDD00", min: 20, max: 40}, // Yellow
+   {strokeStyle: "#30B32D", min: 40, max: 60}, // Green
+   {strokeStyle: "#30B32D", min: 60, max: 80}, // Yellow
+   {strokeStyle: "#30B32D", min: 80, max: 100}  // Red
+],
+  generateGradient: true,
+  highDpiSupport: true,     // High resolution support
+  // renderTicks is Optional
+  renderTicks: {
+    divisions: 5,
+    divWidth: 2.4,
+    divLength: 0.67,
+    divColor: '#333333',
+    subDivisions: 0,
+    subLength: 0.62,
+    subWidth: 1,
+    subColor: '#666666'
+  }
+  
+};
+
+var is_login_ok = false;
+var is_cookie_red = false;
+var mission_sec = 0;
+var target_spd;
+var gauge_spd;
+var target_pwr;
+var gauge_pwr;
+var selected_msn = 0; //0: not selected, 1: infinity, 2: release Weight, 3: take Weight
+var is_html_loaded = false;
+
+var set_spd = 80;
+var logincookiename = "logincookie";
+
+var map_outer_div, droneMarker, rotaCizgisi;
+var drone_current_location = [40.7384617, 30.0986767];
+var is_msn_running = false;
+var rote_coors;
+var pole_coors;
+var border_coors;
+var current_msn_step = 0;
+
+
+
+function decodeBase64(base64) {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
+}
+
+async function fetchFile() {
+	const repoOwner = 'engrare';
+	const repoName = 'dronox_priv';
+	const filePath = 'index.html';
+	const github_api = await readData("github-api");
+	
+    try {
+        const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
+            headers: { Authorization: `Bearer ${github_api}` },
+        });
+        if (!response.ok) throw new Error(`GitHub API hatası: ${response.statusText}`);
+        const data = await response.json();
+        return decodeBase64(data.content);
+    } catch (error) {
+        console.error(`Hata (${filePath}):`, error);
+        return null;
+    }
+}
+
+async function replaceHtmlWithUpdatedContent() {
+    try {
+        const htmlContent = await fetchFile();
+        if (!htmlContent) {
+            throw new Error("Dosya yüklenemedi.");
+			return false;
+        }
+		if (window.location.href.includes("dronox.engrare.com")) {
+			$("#placeholder").html(htmlContent);
+			startWebsite();
+			console.log("HTML eklendi.");
+		} else {
+			openPage(1);
+		}
+		return true;
+    } catch (error) {
+		return false;
+        console.error("Bir hata oluştu:", error);
+    }
+}
+
+function saveWebpage() {
+	const userConfirmed = confirm("Yükleme yapmak istediğinize emin misiniz?");
+
+    if (userConfirmed) {
+		const result = {
+			html: null,
+			css: [],
+			js: []
+		};
+		result.html = document.documentElement.outerHTML;
+		console.log(result.html);
+    }
+}
+
+	
+$(document).ready(function() {
+	if (!window.location.href.includes("dronox.engrare.com")) {
+		is_html_loaded = true;
+		var usernameee = "";
+		var passworrdd = "";
+		logintofirebase(usernameee, passworrdd);
+		
+		startWebsite();
+	}
+	const savedData = readCookie('savedCoordinates');
+	if (savedData) {
+		const coordinates = JSON.parse(savedData);
+		document.getElementById('pole_lat1').value = coordinates.p_lat1;
+		document.getElementById('pole_lng1').value = coordinates.p_lng1;
+		document.getElementById('pole_lat2').value = coordinates.p_lat2;
+		document.getElementById('pole_lng2').value = coordinates.p_lng2;
+		document.getElementById('border_lat1').value = coordinates.drone_lat;
+		document.getElementById('border_lng1').value = coordinates.drone_lng;
+		document.getElementById('dot_count').value = coordinates.inf_dot_count;
+		document.getElementById('pole_dist').value = coordinates.inf_pole_dist;
+	}
+	
+	
+	$("#speedSlider").on("input change", function() {
+		$("#speedValue").text($(this).val());
+	});
+	
+		/*$(document).keydown(function(event) {
+			var key = event.key;
+		});
+
+		$(document).keyup(function(event) {
+			var key = event.key;
+		});*/
+	
+	if(is_cookie_red == false) {
+		logininfo = readCookie(logincookiename);
+		is_cookie_red = true;
+	}
+	
+	if(logininfo != "") {
+		const parts = logininfo.split(/\|/);
+		console.log(parts);
+
+		logintofirebase(parts[0], parts[1]);
+	}
+	
+});
+
+let observer1, observer2;
+
+function startObserving() {
+    var element1 = document.getElementById('main_left_div_ID');
+    var element2 = document.getElementById('main_top_div_ID');
+
+    if (element1 && !observer1) {
+        observer1 = new ResizeObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var width = entry.contentRect.width;
+                var height = entry.contentRect.height;
+                $(".main_right_top_div").width($(".main_div").width() - $("#main_left_div_ID").width());
+            });
+        });
+        observer1.observe(element1);
+        console.log("Observer 1 başlatıldı");
+    }
+
+    if (element2 && !observer2) {
+        observer2 = new ResizeObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var width = entry.contentRect.width;
+                var height = entry.contentRect.height;
+                $(".main_bottom_div").height($(".main_div").height() - $("#main_top_div_ID").height() - 120);
+            });
+        });
+        observer2.observe(element2);
+        console.log("Observer 2 başlatıldı");
+    }
+}
+
+
+function enterCoordinate() {
+	const p_lat1 = document.getElementById('pole_lat1').value;
+	const p_lng1 = document.getElementById('pole_lng1').value;
+	const p_lat2 = document.getElementById('pole_lat2').value;
+	const p_lng2 = document.getElementById('pole_lng2').value;
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
+
+	// Tüm değerleri JSON formatında tek cookie'de sakla
+	const coordinates = {
+		p_lat1,
+		p_lng1,
+		p_lat2,
+		p_lng2,
+		drone_lat,
+		drone_lng,
+		inf_dot_count,
+		inf_pole_dist
+	};
+
+	setCookie('savedCoordinates', JSON.stringify(coordinates), 10);
+	drone_current_location = [drone_lat, drone_lng];
+	updateDroneLocation(drone_current_location);
+	
+	pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
+	clearPoleCoordinates();
+	addPoleCoordinate(pole_coors[0]);
+	addPoleCoordinate(pole_coors[1]);
+}
+
+function startWebsite() {
+	openPage(1);
+	/*target_spd = document.getElementById('speed_meter_gauge');
+	gauge_spd = new Gauge(target_spd).setOptions(spd_opts);
+	gauge_spd.maxValue = 30;
+	gauge_spd.setMinValue(0);
+	gauge_spd.animationSpeed = 24;
+	gauge_spd.set(0);
+	
+	
+	target_pwr = document.getElementById('power_meter_gauge');
+	gauge_pwr = new Gauge(target_pwr).setOptions(power_opts);
+	gauge_pwr.maxValue = 100;
+	gauge_pwr.setMinValue(0);
+	gauge_pwr.animationSpeed = 24;
+	gauge_pwr.set(0);*/
+	startObserving();
+	
+
+	map_outer_div = L.map('map_outer_div').setView(drone_current_location, 20);
+	L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+		attribution: 'Tiles © Esri'
+	}).addTo(map_outer_div);
     
-    <link rel="icon" href="icon.png" type="image/png">
-    <link rel="shortcut icon" href="icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="icon.png">
+	
+	$(".leaflet-control-attribution").text("ENGRARE®");
+	
+	droneMarker = L.marker(drone_current_location, {
+		icon: L.icon({
+			iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
+			iconSize: [50, 50]
+		})
+	}).addTo(map_outer_div);
+	
 
-    <script src="https://cdn.tailwindcss.com"></script>
+	//setInterval(writeScreenData, 1000);
+}
+
+
+
+var pathElements = [];
+var path_elements_selected = [];
+var path_elements_done = [];
+
+var poleElements = [];
+var borderElements = [];
+
+
+function addPoleCoordinate(coordinate) {
+    // Siyah daire oluştur (direk)
+    const poleMarker = L.circleMarker(coordinate, {
+        radius: 8, // Biraz daha büyük
+        fillColor: "#ffffff", // İçi beyaz
+        color: "#000000", // Siyah kenarlık
+        weight: 2, // Kenarlık kalınlığı
+        opacity: 1,
+        fillOpacity: 1 // Tam opak
+    }).addTo(map_outer_div);
     
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    poleElements.push(poleMarker);
+    return poleMarker;
+}
+
+line_type_json = [
+  {//predected lines
+    "line": {
+      color: "#ff0000",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
+        radius: 4,
+        fillColor: "#ff0000",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }
+  },
+  {//following lines
+    "line": {
+      color: "#e5c13d",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
+        radius: 4,
+        fillColor: "#e5c13d",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }
+  },
+   {//passed lines
+    "line": {
+      color: "#4ab138",
+      weight: 2,
+      opacity: 0.7,
+      dashArray: "5,5"
+    },
+    "marker": {
+        radius: 4,
+        fillColor: "#4ab138",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }
+  }
+];
+
+
+function addPathCoordinate(old_coordinate, coordinate, line_type) {
+    let line = null;
+    if (old_coordinate) {
+        line = L.polyline([old_coordinate, coordinate], line_type_json[line_type].line
+		).addTo(map_outer_div);
+        pathElements.push(line);
+    }
     
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    const pathMarker = L.circleMarker(coordinate, line_type_json[line_type].marker
+    ).addTo(map_outer_div);
     
-    <script src="https://unpkg.com/lucide@latest"></script>
+    pathElements.push(pathMarker);
+    return pathMarker;
+}
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(14, 165, 233, 0.3); border-radius: 20px; }
+function addBorderCoordinate(old_coordinate, coordinate) {
+    let line = null;
+    if (old_coordinate) {
+        line = L.polyline([old_coordinate, coordinate], {
+            color: '#ff0000',
+            weight: 2,
+            opacity: 1,
+            dashArray: '5, 5'
+        }).addTo(map_outer_div);
+        borderElements.push(line); // Çizgiyi kaydet
+    }
+    
+    // Kırmızı yol noktası ekle
+    const pathMarker = L.circleMarker(coordinate, {
+        radius: 6,
+        fillColor: "#ff0000",
+        color: "#ffffff",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+    }).addTo(map_outer_div);
+    
+    borderElements.push(pathMarker); // Marker'ı kaydet
+    return pathMarker;
+}
+
+
+function clearPoleCoordinates() {
+    poleElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    poleElements = [];
+}
+
+
+function clearPathCoordinates() {
+	pathElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    pathElements = [];
+	path_elements_selected.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    path_elements_selected = [];
+    path_elements_done.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    path_elements_done = [];
+}
+
+function clearBorderCoordinates() {
+    borderElements.forEach(element => {
+        map_outer_div.removeLayer(element);
+    });
+    borderElements = [];
+}
+
+function updateDroneLocation(coors) {
+	drone_current_location = coors;
+	droneMarker.setLatLng(coors);
+    map_outer_div.panTo(coors);
+}
+
+function calculateHalfCirclePath(poles_coors, startPoint, steps, radiusInMeters = 10) {
+    const [p1, p2] = poles_coors.map(c => c.map(Number));
+    const [startLat, startLng] = startPoint.map(Number);
+    
+    if ([...p1, ...p2, startLat, startLng].some(isNaN)) {
+        console.error("Geçersiz koordinatlar!");
+        return [];
+    }
+
+    // Yardımcı fonksiyon: İki nokta arasındaki yönü hesapla (bearing)
+    function getBearing(lat1, lng1, lat2, lng2) {
+        const lat1Rad = lat1 * Math.PI / 180;
+        const lat2Rad = lat2 * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const y = Math.sin(dLng) * Math.cos(lat2Rad);
+        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+        let bearing = Math.atan2(y, x);
+        return (bearing * 180 / Math.PI + 360) % 360;
+    }
+
+    // Yardımcı fonksiyon: Belirli bir yönde ve mesafede nokta hesapla
+    function getPointAtDistance(lat, lng, distance, bearing) {
+        const R = 6371e3;
+        const lat1 = lat * Math.PI / 180;
+        const lng1 = lng * Math.PI / 180;
+        const brng = bearing * Math.PI / 180;
+        const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance/R) +
+                      Math.cos(lat1) * Math.sin(distance/R) * Math.cos(brng));
+        const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(distance/R) * Math.cos(lat1),
+                          Math.cos(distance/R) - Math.sin(lat1) * Math.sin(lat2));
+        return [lat2 * 180 / Math.PI, (lng2 * 180 / Math.PI + 540) % 360 - 180];
+    }
+
+    // İki nokta arasındaki çizgiye göre bir noktanın hangi tarafta olduğunu belirle
+    function getSideOfLine(lat1, lng1, lat2, lng2, latS, lngS) {
+        const d = (lngS - lng1) * (lat2 - lat1) - (latS - lat1) * (lng2 - lng1);
+        return d > 0 ? 1 : -1;
+    }
+
+    // İki nokta arasındaki mesafeyi hesapla (metre cinsinden)
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371e3;
+        const lat1Rad = lat1 * Math.PI / 180;
+        const lat2Rad = lat2 * Math.PI / 180;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
         
-        /* --- ANIMASYONLAR --- */
-        @keyframes float { 
-            0%, 100% { transform: translateY(0) rotate(0deg); } 
-            50% { transform: translateY(-30px) rotate(5deg); } 
-        }
-        @keyframes float-slow { 
-            0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); } 
-            50% { transform: translateY(-40px) translateX(15px) rotate(-5deg); } 
-        }
-        @keyframes float-fast { 
-            0%, 100% { transform: translateY(0) rotate(0deg); } 
-            50% { transform: translateY(-20px) rotate(10deg); } 
-        }
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         
-        .animate-float { animation: float 5s ease-in-out infinite; }
-        .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
-        .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
+        return R * c;
+    }
+
+    const center = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    const side = getSideOfLine(p1[0], p1[1], p2[0], p2[1], startLat, startLng);
+    
+    // Hangi direğin daha yakın olduğunu bul
+    const d1 = calculateDistance(startLat, startLng, p1[0], p1[1]);
+    const d2 = calculateDistance(startLat, startLng, p2[0], p2[1]);
+    const [firstPole, secondPole] = d1 < d2 ? [p1, p2] : [p2, p1];
+    
+    const path = [];
+    const poleDistance = calculateDistance(p1[0], p1[1], p2[0], p2[1]);
+    const safeRadius = Math.min(radiusInMeters, poleDistance / 2 - 1);
+    
+    // İlk direğin etrafında dön
+    const bearingToOtherPole1 = getBearing(firstPole[0], firstPole[1], 
+                                         firstPole === p1 ? p2[0] : p1[0], 
+                                         firstPole === p1 ? p2[1] : p1[1]);
+    
+    let startBearing1, endBearing1;
+    if (side === 1) {
+        startBearing1 = bearingToOtherPole1 + 90;
+        endBearing1 = startBearing1 + 180;
+    } else {
+        startBearing1 = bearingToOtherPole1 - 90;
+        endBearing1 = startBearing1 - 180;
+    }
+    
+    for (let i = 0; i <= steps/2; i++) {
+        const bearing = startBearing1 + (endBearing1 - startBearing1) * (i / (steps/2));
+        const point = getPointAtDistance(firstPole[0], firstPole[1], safeRadius, (bearing + 360) % 360);
+        path.push(point);
+    }
+    
+    path.push(center);
+    
+    // İkinci direğin etrafında dön
+    const bearingToOtherPole2 = getBearing(secondPole[0], secondPole[1], 
+                                          secondPole === p1 ? p2[0] : p1[0], 
+                                          secondPole === p1 ? p2[1] : p1[1]);
+    
+    let startBearing2, endBearing2;
+    if (side === 1) {
+        startBearing2 = bearingToOtherPole2 - 90;
+        endBearing2 = startBearing2 - 180;
+    } else {
+        startBearing2 = bearingToOtherPole2 + 90;
+        endBearing2 = startBearing2 + 180;
+    }
+    
+    for (let i = 0; i <= steps/2; i++) {
+        const bearing = startBearing2 + (endBearing2 - startBearing2) * (i / (steps/2));
+        const point = getPointAtDistance(secondPole[0], secondPole[1], safeRadius, (bearing + 360) % 360);
+        path.push(point);
+    }
+    
+    path.push([startLat, startLng]);
+    
+    return path;
+}
+
+function calculateInfinityPath(poles_coors, startPoint, steps,  radiusInMeters = 10) {
+    
+    const [p1, p2] = poles_coors.map(c => c.map(Number));
+    const [startLat, startLng] = startPoint.map(Number);
+    
+    if ([...p1, ...p2, startLat, startLng].some(isNaN)) {
+        console.error("Geçersiz koordinatlar!");
+        return [];
+    }
+
+    // Temel parametreler
+    const dx = p2[1] - p1[1];
+    const dy = p2[0] - p1[0];
+    const distance = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    const center = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2];
+    const a = distance / Math.sqrt(2);
+
+    const allPoints = [];
+    
+    // Parametrik denklemlerle tüm noktaları oluştur
+    for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * Math.PI * 2;
+        const x = (a * Math.cos(t)) / (1 + Math.sin(t)**2);
+        const y = (a * Math.sin(t) * Math.cos(t)) / (1 + Math.sin(t)**2);
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
+        const rotX = x * Math.cos(angle) - y * Math.sin(angle);
+        const rotY = x * Math.sin(angle) + y * Math.cos(angle);
         
-        .glass-input { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; }
-        .glass-input::placeholder { color: rgba(255, 255, 255, 0.7); }
-        .glass-input:focus { background: rgba(255, 255, 255, 0.2); outline: none; border-color: rgba(255, 255, 255, 0.8); }
-        
-        /* --- DENİZ DESENLERİ --- */
-        .sea-pattern {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
+        allPoints.push([
+            center[0] + rotY,
+            center[1] + rotX
+        ]);
+    }
+
+    // Başlangıç noktasına en yakın noktayı bul
+    let closestIndex = 0;
+    let minDistance = Infinity;
+    
+    allPoints.forEach((point, i) => {
+        const d = Math.hypot(point[0]-startLat, point[1]-startLng);
+        if (d < minDistance) {
+            minDistance = d;
+            closestIndex = i;
         }
-        .sea-icon { 
-            position: absolute; 
-            color: rgba(2, 132, 199, 0.3); /* Varsayılan mavi tonu */
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
+    });
+
+    // Noktaları yeniden sırala (en yakından başlayıp döngüyü tamamla)
+    const sortedPoints = [];
+    for (let i = 0; i < allPoints.length; i++) {
+        const idx = (closestIndex + i) % allPoints.length;
+        sortedPoints.push(allPoints[idx]);
+    }
+    
+    // Başlangıç noktasına geri dönmek için son noktayı ekle
+    sortedPoints.push([startLat, startLng]);
+
+    return sortedPoints;
+}
+
+function processMatrix(matrix) {
+    let reversed = matrix.reverse();
+    for (let i = 0; i < reversed.length; i++) {
+        reversed[i] = removeConsecutiveDuplicates(reversed[i]);
+    }
+    return reversed;
+}
+
+function removeConsecutiveDuplicates(arr) {
+    let stack = [];
+    for (let num of arr) {
+        if (stack.length > 0 && stack[stack.length - 1] === num) {
+            stack.pop();
+        } else {
+            stack.push(num);
         }
-        .content-wrapper {
-            position: relative;
-            z-index: 10;
-        }
-    </style>
-</head>
-<body class="bg-gradient-to-br from-cyan-50 via-blue-50 to-sky-100 min-h-screen text-slate-700 selection:bg-sky-200 overflow-x-hidden">
+    }
+    return stack;
+}
 
-    <div id="root"></div>
+function calculateSearchPath(poles_coors, startPoint, border_coors) {
+    const OFFSET_DIST = 0.0005;
+    const POLE_MIN_DIST = 0.0002;
 
-    <script type="text/babel" data-type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // Yardımcı fonksiyonlar
+    const lineFromPoints = (A, B) => ({
+        a: B[1] - A[1],
+        b: A[0] - B[0],
+        c: A[0]*B[1] - B[0]*A[1]
+    });
 
-        const { useState, useEffect, useRef } = React;
-        
-        // --- Yerel Tarih Yardımcısı ---
-        const getLocalDateString = () => {
-            const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
+    const offsetLine = (line, d) => {
+        const length = Math.sqrt(line.a*line.a + line.b*line.b);
+        return {...line, c: line.c - d*length}; // İçe doğru offset
+    };
 
-        // --- İkon Bileşeni ---
-        const Icon = ({ name, size = 24, className = "", style = {} }) => {
-            const ref = useRef(null);
-            useEffect(() => {
-                if (ref.current) {
-                    ref.current.innerHTML = '';
-                    const i = document.createElement('i');
-                    i.setAttribute('data-lucide', name);
-                    ref.current.appendChild(i);
-                    if (window.lucide) {
-                        window.lucide.createIcons({
-                            root: ref.current,
-                            icons: window.lucide.icons,
-                            attrs: { class: className, width: size, height: size, style: style }
-                        });
-                    }
-                }
-            }, [name, size, className, style]);
-            return <span ref={ref} style={{ display: 'inline-flex', ...style }}></span>;
-        };
-
-        // --- Arkaplan Desenleri Bileşeni (GÜNCELLENDİ - RENKLİ) ---
-        const SeaBackground = () => (
-            <div className="sea-pattern">
-                {/* Sol Üst - Pembe Deniz Kabuğu */}
-                <div className="sea-icon top-10 left-10 animate-float">
-                    <Icon name="shell" size={80} style={{ color: 'rgba(244, 114, 182, 0.4)' }} /> 
-                </div>
-                <div className="sea-icon top-48 left-1/4 animate-float-slow"><Icon name="fish" size={60} /></div>
-                
-                {/* Sağ Üst - Sarı Güneş ve Turuncu Deniz Yıldızı */}
-                <div className="sea-icon top-20 right-20 animate-float-fast">
-                    <Icon name="sun" size={100} style={{color: 'rgba(251, 191, 36, 0.5)'}} />
-                </div>
-                <div className="sea-icon top-1/3 right-10 animate-float">
-                    <Icon name="star" size={70} style={{ color: 'rgba(251, 146, 60, 0.5)' }} /> {/* Turuncu Yıldız */}
-                </div>
-                
-                {/* Sol Alt */}
-                <div className="sea-icon bottom-32 left-10 animate-float-slow"><Icon name="fish" size={80} style={{transform: 'scaleX(-1)'}} /></div>
-                <div className="sea-icon bottom-10 left-1/3 animate-float">
-                    <Icon name="star" size={50} style={{ color: 'rgba(251, 146, 60, 0.4)' }} /> {/* Küçük Turuncu Yıldız */}
-                </div>
-                
-                {/* Sağ Alt - Cyan Dalgalar */}
-                <div className="sea-icon bottom-10 right-1/4 animate-float">
-                    <Icon name="waves" size={120} style={{ color: 'rgba(34, 211, 238, 0.3)' }} />
-                </div>
-                <div className="sea-icon bottom-40 right-10 animate-float-fast"><Icon name="sailboat" size={60} /></div>
-                
-                {/* Orta Rastgele - Bulut/Duman ve Ekstra Kabuk */}
-                <div className="sea-icon top-1/2 left-1/2 animate-float-slow opacity-20"><Icon name="cloud" size={150} /></div>
-                <div className="sea-icon bottom-1/4 left-20 animate-float-fast">
-                    <Icon name="shell" size={40} style={{ color: 'rgba(244, 114, 182, 0.3)' }} />
-                </div>
-            </div>
-        );
-
-        // --- Renk Hesaplama ---
-        const getGoalStyle = (dateStr, isCompleted) => {
-            if (isCompleted) return 'bg-slate-50 opacity-60 border-slate-100';
-            if (!dateStr) return 'bg-white/60 shadow-sm border border-slate-100';
-
-            const today = new Date(getLocalDateString());
-            const target = new Date(dateStr);
-            const diffTime = target - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const diffMonths = diffDays / 30;
-
-            if (diffMonths < 0) return 'bg-red-50 border border-red-100 text-red-900 shadow-sm'; 
-            if (diffMonths < 3) return 'bg-green-100 border border-green-200 text-green-900 shadow-sm'; 
-            else if (diffMonths >= 3 && diffMonths < 6) return 'bg-pink-100 border border-pink-200 text-pink-900 shadow-sm';
-            else if (diffMonths >= 6 && diffMonths <= 12) return 'bg-orange-100 border border-orange-200 text-orange-900 shadow-sm'; 
-            else if (diffMonths > 12) return 'bg-blue-100 border border-blue-200 text-blue-900 shadow-sm'; 
-
-            return 'bg-white/60 shadow-sm border border-slate-100';
-        };
-
-        const BASE_CATS = [
-            { id: 'spor', name: 'Spor', icon: 'dumbbell', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-            { id: 'beslenme', name: 'Beslenme', icon: 'utensils', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
-            { id: 'bakim', name: 'Bakım', icon: 'sparkles', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
-            { id: 'akademi', name: 'Akademi', icon: 'book-open', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-            { id: 'proje', name: 'Proje', icon: 'briefcase', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
-            { id: 'finans', name: 'Finans', icon: 'wallet', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' }
+    const lineIntersection = (L1, L2) => {
+        const det = L1.a*L2.b - L2.a*L1.b;
+        if (Math.abs(det) < 1e-15) return null;
+        return [
+            (L1.b*L2.c - L2.b*L1.c)/det,
+            (L1.c*L2.a - L2.c*L1.a)/det
         ];
+    };
 
-        const DEFAULT_CATEGORIES_STRUCT = {
-            'Yakın Vade': JSON.parse(JSON.stringify(BASE_CATS)),
-            'Orta Vade': JSON.parse(JSON.stringify(BASE_CATS)),
-            'Uzun Vade': JSON.parse(JSON.stringify(BASE_CATS))
-        };
+    const distance = (p1, p2) => 
+        Math.hypot(p1[0]-p2[0], p1[1]-p2[1]);
 
-        const PRESET_CATEGORIES = [
-            { name: 'Proje', icon: 'briefcase', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
-            { name: 'Spor', icon: 'dumbbell', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-            { name: 'Ders', icon: 'book-open', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-            { name: 'Sağlık', icon: 'heart', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
-            { name: 'Seyahat', icon: 'plane', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { name: 'Sanat', icon: 'palette', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' }
-        ];
+    const validatePoint = (pt) => {
+        // Sınır kontrolü ve direk mesafe kontrolü
+        return poles_coors.every(pole => distance(pt, pole) >= POLE_MIN_DIST);
+    };
 
-        const STYLE_PRESETS = [
-            { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-            { color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
-            { color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
-            { color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-            { color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
-            { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
-            { color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100' },
-        ];
+    // 1. Adım: İlk 4 noktayı oluştur
+    const originalEdges = Array.from({length:4}, (_,i) => 
+        lineFromPoints(border_coors[i], border_coors[(i+1)%4]));
 
-        const timeSlots = ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
-        const terms = ['Yakın Vade', 'Orta Vade', 'Uzun Vade'];
+    const offsetEdges = originalEdges.map(edge => 
+        offsetLine(edge, OFFSET_DIST));
 
-        // --- Giriş Ekranı ---
-        const LoginScreen = ({ onLogin, onSignup, onResetPassword, loading, error, successMsg }) => {
-            const [mode, setMode] = useState('login');
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
+    const initialPoints = Array.from({length:4}, (_,i) => 
+        lineIntersection(offsetEdges[i], offsetEdges[(i+1)%4]));
 
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (mode === 'signup') onSignup(email, password);
-                else if (mode === 'login') onLogin(email, password);
-                else if (mode === 'reset') onResetPassword(email);
-            };
+    // 2. Adım: Nokta validasyonu
+    if (initialPoints.some(pt => !pt || !validatePoint(pt))) 
+        return [startPoint];
 
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-sky-900 via-blue-800 to-indigo-900 text-white p-6 relative overflow-hidden">
-                    <SeaBackground /> 
-                    
-                    <div className="z-10 flex flex-col items-center text-center max-w-sm w-full animate-fadeIn content-wrapper">
-                        <div className="bg-white/10 backdrop-blur-lg p-6 rounded-3xl mb-6 animate-float shadow-2xl border border-white/10 flex items-center justify-center w-32 h-32 overflow-hidden">
-                            <img src="icon.png" alt="App Icon" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-                            <div style={{display:'none'}}><Icon name="waves" size={64} className="text-cyan-300" /></div>
-                        </div>
-                        
-                        <h1 className="text-3xl font-bold mb-2 tracking-tight drop-shadow-md">OceanPlanner</h1>
-                        <p className="text-blue-100 mb-8 text-sm font-medium drop-shadow-sm">Hayatını planla, akışına bırak.</p>
-                        
-                        <form onSubmit={handleSubmit} className="w-full space-y-4 bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
-                            <h2 className="text-lg font-semibold mb-2">{mode === 'signup' ? 'Kayıt Ol' : mode === 'reset' ? 'Şifre Sıfırla' : 'Giriş Yap'}</h2>
-                            {error && <div className="bg-red-500/20 border border-red-500/50 text-red-100 text-xs p-3 rounded-lg text-left">{error}</div>}
-                            {successMsg && <div className="bg-green-500/20 border border-green-500/50 text-green-100 text-xs p-3 rounded-lg text-left">{successMsg}</div>}
+    let path = [...initialPoints];
+    let currentLines = initialPoints.map((_,i) => 
+        lineFromPoints(initialPoints[i], initialPoints[(i+1)%4]));
 
-                            <div className="space-y-3">
-                                <div className="relative">
-                                    <div className="absolute left-3 top-3 text-blue-200/70"><Icon name="mail" size={18} /></div>
-                                    <input type="email" required placeholder="E-posta" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm transition-all" />
-                                </div>
-                                {mode !== 'reset' && (
-                                    <div className="relative">
-                                        <div className="absolute left-3 top-3 text-blue-200/70"><Icon name="lock" size={18} /></div>
-                                        <input type="password" required minLength="6" placeholder="Şifre" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm transition-all" />
-                                    </div>
-                                )}
-                            </div>
+    // 3. Adım: Dinamik spiral oluşturma
+    let cycle = [
+        {type: 'edge', index: 0},  // İlk çift: Kenar0 + Line0
+        {type: 'line', index: 0},  // Sonraki: Line0 + Line1
+        {type: 'line', index: 1},
+        {type: 'line', index: 2},
+        {type: 'edge', index: 3}   // Son çift: Line3 + Kenar3
+    ];
 
-                            {mode === 'login' && <div className="text-right"><button type="button" onClick={() => { setMode('reset'); }} className="text-xs text-blue-200 hover:text-white transition-colors">Şifremi Unuttum</button></div>}
-
-                            <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-cyan-900/30 transition-all duration-300 active:scale-[0.98] disabled:opacity-70 mt-2">
-                                {loading ? <Icon name="loader-2" className="animate-spin mx-auto" /> : (mode === 'signup' ? 'Kayıt Ol' : mode === 'reset' ? 'Gönder' : 'Giriş Yap')}
-                            </button>
-
-                            <div className="pt-2 flex flex-col gap-2">
-                                {mode === 'reset' ? 
-                                    <button type="button" onClick={() => setMode('login')} className="text-xs text-blue-200 hover:text-white">Giriş Ekranına Dön</button> : 
-                                    <button type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} className="text-xs text-blue-200 hover:text-white underline decoration-blue-200/30 underline-offset-4">
-                                        {mode === 'login' ? 'Hesabın yok mu? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap'}
-                                    </button>
-                                }
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- Ana Uygulama ---
-        function App() {
-            const [user, setUser] = useState(null);
-            const [appLoading, setAppLoading] = useState(true);
-            const [authLoading, setAuthLoading] = useState(false);
-            const [authError, setAuthError] = useState('');
-            const [successMsg, setSuccessMsg] = useState('');
-            const [activeTab, setActiveTab] = useState('daily');
+    while (true) {
+        let newPoints = [];
+        for (const {type, index} of cycle) {
+            let L1, L2;
             
-            // Tarih ve Veriler
-            const [selectedDate, setSelectedDate] = useState(getLocalDateString());
-            const today = getLocalDateString();
-            const isPast = selectedDate < today;
+            if (type === 'edge') {
+                L1 = offsetLine(originalEdges[index], OFFSET_DIST);
+                L2 = offsetLine(currentLines[index], OFFSET_DIST);
+            } else {
+                L1 = offsetLine(currentLines[index], OFFSET_DIST);
+                L2 = offsetLine(currentLines[(index+1)%4], OFFSET_DIST);
+            }
 
-            const [schedule, setSchedule] = useState({});
-            const [reminders, setReminders] = useState([]);
-            const [newReminder, setNewReminder] = useState('');
-            const [waterCount, setWaterCount] = useState(0);
-            const [bookPages, setBookPages] = useState(0); 
-            
-            const [categories, setCategories] = useState(DEFAULT_CATEGORIES_STRUCT);
-            const [activeTerm, setActiveTerm] = useState('Yakın Vade');
-            const [goals, setGoals] = useState({ 'Yakın Vade': {}, 'Orta Vade': {}, 'Uzun Vade': {} });
-            
-            const [username, setUsername] = useState('');
-            const [photoURL, setPhotoURL] = useState(null);
-            const fileInputRef = useRef(null);
-
-            const [goalInputs, setGoalInputs] = useState({}); 
-            const [newCategoryName, setNewCategoryName] = useState('');
-            const [showAddCatInput, setShowAddCatInput] = useState(false);
-
-            const [db, setDb] = useState(null);
-            const [auth, setAuth] = useState(null);
-            const [appId, setAppId] = useState('ocean-planner-v1');
-
-            useEffect(() => {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyCpv-oGPpAISo4aZuUvE0HzMNEbm70lG0o", 
-                    authDomain: "ocean-planner-d2702.firebaseapp.com",
-                    projectId: "ocean-planner-d2702",
-                    storageBucket: "ocean-planner-d2702.firebasestorage.app",
-                    messagingSenderId: "862092781552",
-                    appId: "1:862092781552:web:d4adc019d984b55c825f35",
-                    measurementId: "G-1DCMPB609K"
-                };
-
-                try {
-                    const app = initializeApp(firebaseConfig);
-                    const authInstance = getAuth(app);
-                    const dbInstance = getFirestore(app);
-                    setAuth(authInstance);
-                    setDb(dbInstance);
-                    onAuthStateChanged(authInstance, (u) => {
-                        setUser(u);
-                        setAppLoading(false);
-                    });
-                } catch (err) {
-                    console.error("Firebase init error", err);
-                    setAppLoading(false);
-                }
-            }, []);
-
-            // --- Handlers ---
-            const handleLogin = async (email, password) => {
-                if (!auth) return; setAuthLoading(true); setAuthError('');
-                try { await signInWithEmailAndPassword(auth, email, password); } 
-                catch (error) { setAuthError("Giriş başarısız: " + error.code); } finally { setAuthLoading(false); }
-            };
-            const handleSignup = async (email, password) => {
-                if (!auth) return; setAuthLoading(true); setAuthError('');
-                try { await createUserWithEmailAndPassword(auth, email, password); } 
-                catch (error) { setAuthError("Kayıt başarısız: " + error.code); } finally { setAuthLoading(false); }
-            };
-            const handleResetPassword = async (email) => {
-                if (!auth) return; setAuthLoading(true); setAuthError(''); setSuccessMsg('');
-                try { await sendPasswordResetEmail(auth, email); setSuccessMsg('Link gönderildi!'); } 
-                catch (error) { setAuthError("Hata: " + error.code); } finally { setAuthLoading(false); }
-            };
-            const handleLogout = async () => { if(auth) await signOut(auth); };
-
-            const handleSaveProfile = async () => {
-                if (!user || !db) return;
-                try {
-                    const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'profile');
-                    await setDoc(profileRef, { username, photoURL }, { merge: true });
-                    alert("Kaydedildi!");
-                } catch (err) { console.error(err); alert("Hata"); }
-            };
-
-            const handleFileChange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 1024 * 1024) { alert("Fotoğraf 1MB'dan küçük olmalı."); return; }
-                    const reader = new FileReader();
-                    reader.onloadend = () => setPhotoURL(reader.result);
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            useEffect(() => {
-                if (!user || !db) return;
-                const categoriesRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'categories_v2');
-                const unsubscribeCategories = onSnapshot(categoriesRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data().list;
-                        if (Array.isArray(data)) setCategories(DEFAULT_CATEGORIES_STRUCT);
-                        else setCategories(data || DEFAULT_CATEGORIES_STRUCT);
-                    } else { 
-                        setDoc(categoriesRef, { list: DEFAULT_CATEGORIES_STRUCT }); 
-                        setCategories(DEFAULT_CATEGORIES_STRUCT); 
-                    }
-                });
-                const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'profile');
-                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                    if (docSnap.exists()) { const data = docSnap.data(); setUsername(data.username || ''); setPhotoURL(data.photoURL || null); }
-                });
-                const dailyRef = doc(db, 'artifacts', appId, 'users', user.uid, 'daily_logs', selectedDate);
-                const unsubscribeDaily = onSnapshot(dailyRef, (docSnap) => {
-                    if (docSnap.exists()) { 
-                        const data = docSnap.data(); 
-                        setSchedule(data.schedule || {}); 
-                        setReminders(data.reminders || []); 
-                        setWaterCount(data.waterCount || 0);
-                        setBookPages(data.bookPages || 0); 
-                    } else { 
-                        setSchedule({}); setReminders([]); setWaterCount(0); setBookPages(0);
-                    }
-                });
-                const goalsRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'goals');
-                const unsubscribeGoals = onSnapshot(goalsRef, (docSnap) => {
-                    if (docSnap.exists()) setGoals(docSnap.data().goals || {});
-                });
-                return () => { unsubscribeCategories(); unsubscribeProfile(); unsubscribeDaily(); unsubscribeGoals(); };
-            }, [user, db, selectedDate, appId]);
-
-            const saveDailyData = async (newSchedule, newReminders, newWater, newBookPages) => {
-                if (!user || !db || isPast) return;
-                const dailyRef = doc(db, 'artifacts', appId, 'users', user.uid, 'daily_logs', selectedDate);
-                await setDoc(dailyRef, { 
-                    schedule: newSchedule !== undefined ? newSchedule : schedule, 
-                    reminders: newReminders !== undefined ? newReminders : reminders, 
-                    waterCount: newWater !== undefined ? newWater : waterCount,
-                    bookPages: newBookPages !== undefined ? newBookPages : bookPages,
-                    updatedAt: new Date().toISOString() 
-                }, { merge: true });
-            };
-            const saveGoalsData = async (updatedGoals) => {
-                if (!user || !db) return;
-                const goalsRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'goals');
-                await setDoc(goalsRef, { goals: updatedGoals }, { merge: true });
-            };
-            const saveCategoriesData = async (updatedCategories) => {
-                if (!user || !db) return;
-                const catRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'categories_v2');
-                await setDoc(catRef, { list: updatedCategories }, { merge: true });
-            };
-
-            const handleScheduleChange = (time, value) => setSchedule(prev => ({ ...prev, [time]: value }));
-            const handleScheduleBlur = () => !isPast && saveDailyData(schedule, undefined, undefined, undefined);
-            
-            const addReminder = () => { if (newReminder.trim() && !isPast) { const updated = [...reminders, { id: Date.now(), text: newReminder, completed: false }]; setReminders(updated); setNewReminder(''); saveDailyData(undefined, updated, undefined, undefined); } };
-            const toggleReminder = (id) => { if(isPast) return; const updated = reminders.map(r => r.id === id ? { ...r, completed: !r.completed } : r); setReminders(updated); saveDailyData(undefined, updated, undefined, undefined); };
-            const deleteReminder = (id) => { if(isPast) return; const updated = reminders.filter(r => r.id !== id); setReminders(updated); saveDailyData(undefined, updated, undefined, undefined); };
-            
-            const updateWater = (val) => { if(isPast) return; const newVal = Math.max(0, val); setWaterCount(newVal); saveDailyData(undefined, undefined, newVal, undefined); };
-            const updateBookPages = (val) => {
-                if(isPast) return;
-                const cleanVal = val === '' ? 0 : parseInt(val, 10);
-                if (!isNaN(cleanVal) && cleanVal >= 0) {
-                    setBookPages(cleanVal);
-                    saveDailyData(undefined, undefined, undefined, cleanVal);
-                }
-            };
-
-            const addCategory = (preset = null) => {
-                let newCat;
-                if (preset) {
-                    newCat = { id: `cat_${Date.now()}`, ...preset };
-                } else {
-                    if (!newCategoryName.trim()) return;
-                    const randomStyle = STYLE_PRESETS[Math.floor(Math.random() * STYLE_PRESETS.length)];
-                    newCat = { id: `cat_${Date.now()}`, name: newCategoryName, icon: 'hash', ...randomStyle };
-                }
-                const currentList = categories[activeTerm] || [];
-                const updatedList = [...currentList, newCat];
-                const updatedCategories = { ...categories, [activeTerm]: updatedList };
-                setCategories(updatedCategories); saveCategoriesData(updatedCategories); setNewCategoryName(''); setShowAddCatInput(false);
-            };
-
-            const deleteCategory = (catId) => { if (confirm('Silmek istiyor musunuz?')) { const currentList = categories[activeTerm] || []; const updatedList = currentList.filter(c => c.id !== catId); const updatedCategories = { ...categories, [activeTerm]: updatedList }; setCategories(updatedCategories); saveCategoriesData(updatedCategories); } };
-
-            const updateGoalInput = (catId, field, value) => { setGoalInputs(prev => ({ ...prev, [catId]: { ...prev[catId], [field]: value } })); };
-            const addGoalItem = (term, catId) => {
-                const inputData = goalInputs[catId] || {}; const text = inputData.text; const date = inputData.date;
-                if (!text?.trim()) return;
-                const currentList = Array.isArray(goals[term]?.[catId]) ? goals[term][catId] : [];
-                const updatedList = [...currentList, { id: Date.now(), text, date, completed: false }];
-                const newGoals = { ...goals, [term]: { ...goals[term], [catId]: updatedList } };
-                setGoals(newGoals); setGoalInputs(prev => ({ ...prev, [catId]: { text: '', date: '' } })); saveGoalsData(newGoals);
-            };
-            const toggleGoalItem = (term, catId, itemId) => {
-                const currentList = goals[term]?.[catId]; if (!Array.isArray(currentList)) return;
-                const updatedList = currentList.map(i => i.id === itemId ? { ...i, completed: !i.completed } : i);
-                const newGoals = { ...goals, [term]: { ...goals[term], [catId]: updatedList } };
-                setGoals(newGoals); saveGoalsData(newGoals);
-            };
-            const deleteGoalItem = (term, catId, itemId) => {
-                const currentList = goals[term]?.[catId]; if (!Array.isArray(currentList)) return;
-                const updatedList = currentList.filter(i => i.id !== itemId);
-                const newGoals = { ...goals, [term]: { ...goals[term], [catId]: updatedList } };
-                setGoals(newGoals); saveGoalsData(newGoals);
-            };
-
-            if (appLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-sky-600"><Icon name="loader-2" size={40} className="animate-spin" /></div>;
-            if (!user) return <LoginScreen onLogin={handleLogin} onSignup={handleSignup} onResetPassword={handleResetPassword} loading={authLoading} error={authError} successMsg={successMsg} />;
-
-            return (
-                <div className="min-h-screen pb-10 relative">
-                    {/* --- DENİZ DESENİ ARKAPLAN --- */}
-                    <SeaBackground />
-                    {/* ----------------------------- */}
-
-                    <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 relative z-10 content-wrapper">
-                        {/* Header */}
-                        <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-sky-100 rounded-2xl mb-6 px-4 py-3 md:px-8 md:py-4 transition-all">
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                <div className="flex items-center justify-between w-full md:w-auto">
-                                    <div className="flex items-center gap-3 text-sky-800">
-                                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
-                                            <img src="icon.png" alt="App Icon" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-                                            <div style={{display:'none'}}><Icon name="waves" size={28} /></div>
-                                        </div>
-                                        <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-sm">OceanPlanner</h1>
-                                    </div>
-                                    <button onClick={handleLogout} className="md:hidden text-slate-400 hover:text-red-500 transition-colors p-2"><Icon name="log-out" size={24} /></button>
-                                </div>
-                                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                                    <div className={`w-full sm:w-auto flex items-center bg-white border ${isPast ? 'border-slate-300 bg-slate-50' : 'border-sky-200'} rounded-xl px-3 py-2 shadow-sm`}>
-                                        <div className={`mr-2 ${isPast ? 'text-slate-400' : 'text-sky-500'}`}><Icon name={isPast ? "lock" : "calendar"} size={18} /></div>
-                                        <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent border-none text-sm text-slate-600 font-medium focus:ring-0 cursor-pointer outline-none w-full" />
-                                    </div>
-                                    <div className="flex w-full sm:w-auto bg-slate-100/80 p-1 rounded-xl">
-                                        <button onClick={() => setActiveTab('daily')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'daily' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-sky-600'}`}><Icon name="sun" size={16} /> Günlük</button>
-                                        <button onClick={() => setActiveTab('future')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'future' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-sky-600'}`}><Icon name="target" size={16} /> Hedefler</button>
-                                        <button onClick={() => setActiveTab('profile')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${activeTab === 'profile' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-sky-600'}`}><Icon name="user" size={16} /> Profil</button>
-                                    </div>
-                                    <button onClick={handleLogout} title="Çıkış Yap" className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 transition-all shadow-sm"><Icon name="log-out" size={18} /></button>
-                                </div>
-                            </div>
-                        </nav>
-
-                        {/* Daily Tab */}
-                        {activeTab === 'daily' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-                                <div className="lg:col-span-2">
-                                    <div className={`backdrop-blur-sm rounded-3xl p-5 md:p-6 shadow-xl border transition-colors ${isPast ? 'bg-slate-50/80 shadow-slate-200 border-slate-100' : 'bg-white/70 shadow-sky-900/5 border-white'}`}>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className={`text-lg md:text-xl font-bold flex items-center gap-2 ${isPast ? 'text-slate-600' : 'text-sky-900'}`}><Icon name="clock" size={20} className={`${isPast ? 'text-slate-400' : 'text-sky-500'}`} /> Zaman Çizelgesi</h2>
-                                            <span className={`text-xs font-mono px-2 py-1 rounded-md ${isPast ? 'bg-slate-200 text-slate-500' : 'text-sky-600 bg-sky-50'}`}>{selectedDate}</span>
-                                        </div>
-                                        <div className="space-y-3">{timeSlots.map((time) => (<div key={time} className="flex items-center gap-3"><span className={`w-12 text-xs md:text-sm font-semibold font-mono ${isPast ? 'text-slate-400' : 'text-sky-900/60'}`}>{time}</span><div className="flex-1"><input type="text" readOnly={isPast} placeholder={isPast ? "-" : "Plan..."} value={schedule[time] || ''} onChange={(e) => handleScheduleChange(time, e.target.value)} onBlur={handleScheduleBlur} className={`w-full border rounded-xl px-3 py-2.5 md:py-3 text-sm md:text-base text-slate-700 transition-all shadow-sm ${isPast ? 'bg-slate-100 border-transparent text-slate-500 cursor-not-allowed' : 'bg-white/50 border-sky-100 focus:ring-2 focus:ring-sky-400 focus:bg-white'}`} /></div></div>))}</div>
-                                    </div>
-                                </div>
-                                <div className="space-y-6">
-                                    {/* --- ALINACAKLAR LİSTESİ --- */}
-                                    <div className={`backdrop-blur-sm rounded-3xl p-5 md:p-6 shadow-xl border transition-colors ${isPast ? 'bg-slate-50/80 shadow-slate-200 border-slate-100' : 'bg-white/70 shadow-sky-900/5 border-white'}`}>
-                                        <h2 className={`text-lg md:text-xl font-bold mb-4 flex items-center gap-2 ${isPast ? 'text-slate-600' : 'text-sky-900'}`}><Icon name="shopping-cart" size={20} className={`${isPast ? 'text-slate-400' : 'text-sky-500'}`} /> Alınacaklar Listesi</h2>
-                                        <div className="flex gap-2 mb-4">
-                                            <input type="text" disabled={isPast} value={newReminder} onChange={(e) => setNewReminder(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addReminder()} placeholder={isPast ? "Kilitli" : "Ürün ekle..."} className={`flex-1 border-none rounded-xl px-4 py-2 text-sm outline-none ${isPast ? 'bg-slate-100 text-slate-400' : 'bg-sky-50/50 focus:ring-2 focus:ring-sky-400'}`} />
-                                            {!isPast && <button onClick={addReminder} className="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-xl"><Icon name="plus" size={20} /></button>}
-                                        </div>
-                                        <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">{reminders.length === 0 && <div className="text-center text-slate-400 py-4 text-xs italic">Liste boş</div>}{reminders.map((r) => (<div key={r.id} className={`flex items-start gap-2 p-3 rounded-xl transition-all ${r.completed ? 'bg-sky-50 opacity-60' : 'bg-white shadow-sm'} ${isPast ? 'opacity-80' : ''}`}><button onClick={() => toggleReminder(r.id)} disabled={isPast} className={`mt-0.5 ${r.completed ? 'text-sky-500' : 'text-slate-300'}`}><Icon name="check-circle-2" size={18} /></button><span className={`flex-1 text-sm ${r.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{r.text}</span>{!isPast && <button onClick={() => deleteReminder(r.id)} className="text-slate-300 hover:text-red-400"><Icon name="trash-2" size={16} /></button>}</div>))}</div>
-                                    </div>
-                                    
-                                    {/* SU TAKİBİ (ML HESAPLI) */}
-                                    <div className={`rounded-3xl p-6 shadow-lg text-white relative overflow-hidden ${isPast ? 'bg-slate-400' : 'bg-gradient-to-br from-blue-500 to-cyan-400'}`}>
-                                        <Icon name="droplets" size={80} className="absolute -right-4 -bottom-4 opacity-20" />
-                                        <div className="relative z-10">
-                                            <h3 className="font-bold text-lg mb-1">Su Takibi</h3>
-                                            <div className="flex flex-col mb-4">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="text-5xl font-bold">{waterCount}</span>
-                                                    <span className="text-lg mb-2 opacity-80">bardak</span>
-                                                </div>
-                                                {/* ML Göstergesi */}
-                                                <span className="text-sm font-medium opacity-90 bg-white/20 px-2 py-0.5 rounded-md inline-block w-fit mt-1">
-                                                    Toplam: {waterCount * 200} ml
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button disabled={isPast} onClick={() => updateWater(waterCount - 1)} className="px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-colors">-</button>
-                                                <button disabled={isPast} onClick={() => updateWater(waterCount + 1)} className="flex-1 py-2 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-sm">+ İçtim</button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* --- KİTAP TAKİBİ --- */}
-                                    <div className={`rounded-3xl p-6 shadow-lg text-white relative overflow-hidden ${isPast ? 'bg-slate-400' : 'bg-gradient-to-br from-indigo-500 to-purple-500'}`}>
-                                        <Icon name="book-open" size={80} className="absolute -right-4 -bottom-4 opacity-20" />
-                                        <div className="relative z-10">
-                                            <h3 className="font-bold text-lg mb-1">Kitap Takibi</h3>
-                                            <div className="flex flex-col gap-2">
-                                                <div className="flex items-end gap-2 mb-2">
-                                                    <span className="text-3xl font-bold">{bookPages}</span>
-                                                    <span className="text-sm mb-1 opacity-80">sayfa okundu</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button disabled={isPast} onClick={() => updateBookPages(bookPages - 1)} className="px-3 py-1 bg-white/20 rounded-lg hover:bg-white/30 text-lg font-bold">-</button>
-                                                    <input 
-                                                        type="number" 
-                                                        disabled={isPast}
-                                                        value={bookPages || ''} 
-                                                        onChange={(e) => updateBookPages(e.target.value)} 
-                                                        placeholder="0"
-                                                        className="w-full bg-white text-indigo-900 font-bold text-center py-1.5 rounded-lg outline-none focus:ring-2 focus:ring-white/50" 
-                                                        min="0"
-                                                    />
-                                                    <button disabled={isPast} onClick={() => updateBookPages((bookPages || 0) + 1)} className="px-3 py-1 bg-white/20 rounded-lg hover:bg-white/30 text-lg font-bold">+</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Future Tab */}
-                        {activeTab === 'future' && (
-                            <div className="animate-fadeIn">
-                                <div className="flex justify-center mb-6 md:mb-8 overflow-x-auto pb-2 md:pb-0">
-                                    <div className="bg-white/60 p-1.5 rounded-xl shadow-sm inline-flex whitespace-nowrap">
-                                        {terms.map((term) => (
-                                            <button key={term} onClick={() => setActiveTerm(term)} className={`px-4 md:px-6 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${activeTerm === term ? 'bg-white text-sky-600 shadow-md ring-1 ring-sky-100' : 'text-slate-500 hover:text-sky-600'}`}>{term}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                <div key={activeTerm} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-                                    {(categories[activeTerm] || []).map((cat) => {
-                                        const items = Array.isArray(goals[activeTerm]?.[cat.id]) ? goals[activeTerm][cat.id] : [];
-                                        return (
-                                            <div key={cat.id} className={`bg-white/80 backdrop-blur-md rounded-3xl p-1 shadow-lg border border-white flex flex-col h-auto min-h-[350px] lg:h-[400px] relative group`}>
-                                                <div className="flex flex-col h-full p-5">
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`p-3 rounded-2xl ${cat.bg} ${cat.color} border ${cat.border}`}><Icon name={cat.icon} size={24} /></div>
-                                                            <h3 className="text-lg font-bold text-slate-700">{cat.name}</h3>
-                                                        </div>
-                                                        <button onClick={() => deleteCategory(cat.id)} className="text-slate-300 hover:text-red-400 p-1 rounded-full hover:bg-red-50 transition-colors"><Icon name="trash-2" size={18} /></button>
-                                                    </div>
-                                                    
-                                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 mb-4 min-h-[100px]">
-                                                        {items.length === 0 && <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs italic opacity-70">Henüz hedef yok</div>}
-                                                        {items.map((item) => (
-                                                            <div key={item.id} className={`flex items-start gap-2 p-2.5 rounded-xl text-sm transition-all group/item ${getGoalStyle(item.date, item.completed)}`}>
-                                                                <button onClick={() => toggleGoalItem(activeTerm, cat.id, item.id)} className={`mt-0.5 ${item.completed ? 'text-sky-500' : 'text-slate-400 hover:text-sky-500'}`}><Icon name="check-circle-2" size={16} /></button>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className={`break-words ${item.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{item.text}</div>
-                                                                    {item.date && (
-                                                                        <div className={`flex items-center gap-1 text-[10px] mt-1 ${item.completed ? 'text-slate-400' : 'opacity-80'}`}>
-                                                                            <Icon name="calendar" size={10} /> {item.date}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <button onClick={() => deleteGoalItem(activeTerm, cat.id, item.id)} className="text-slate-400 hover:text-red-500 opacity-100 lg:opacity-0 lg:group-hover/item:opacity-100 transition-opacity"><Icon name="x" size={16} /></button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    
-                                                    <div className="relative mt-auto space-y-2">
-                                                        <div className="flex gap-1">
-                                                            <input type="text" placeholder="Hedef..." 
-                                                                value={goalInputs[cat.id]?.text || ''} 
-                                                                onChange={(e) => updateGoalInput(cat.id, 'text', e.target.value)} 
-                                                                onKeyDown={(e) => e.key === 'Enter' && addGoalItem(activeTerm, cat.id)}
-                                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-2 py-2 text-sm focus:ring-2 focus:ring-sky-200 focus:bg-white transition-all" />
-                                                            <input type="date" 
-                                                                value={goalInputs[cat.id]?.date || ''}
-                                                                onChange={(e) => updateGoalInput(cat.id, 'date', e.target.value)}
-                                                                className="w-10 bg-slate-50 border border-slate-200 rounded-xl px-1 text-transparent focus:text-slate-600 focus:w-auto transition-all cursor-pointer" 
-                                                                title="Tarih Ekle"
-                                                            />
-                                                        </div>
-                                                        <button onClick={() => addGoalItem(activeTerm, cat.id)} disabled={!goalInputs[cat.id]?.text?.trim()} className="w-full py-1.5 bg-sky-100 text-sky-600 rounded-lg hover:bg-sky-500 hover:text-white transition-all disabled:opacity-30 text-xs font-bold"><Icon name="plus" size={14} className="inline mr-1"/> Ekle</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    
-                                    <div className="border-2 border-dashed border-slate-300 rounded-3xl p-6 flex flex-col items-center justify-center text-slate-400 hover:border-sky-300 hover:text-sky-500 transition-all min-h-[350px] lg:h-[400px]">
-                                        {showAddCatInput ? (
-                                            <div className="w-full space-y-4 animate-fadeIn">
-                                                <h3 className="text-center font-bold text-slate-600">Yeni Kategori</h3>
-                                                <input type="text" autoFocus placeholder="Kategori Adı" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCategory()} className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-sky-200 outline-none text-slate-700" />
-                                                
-                                                <div className="space-y-2">
-                                                    <p className="text-xs text-center text-slate-400">Veya Hızlı Seçim:</p>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {PRESET_CATEGORIES.map((preset) => (
-                                                            <button 
-                                                                key={preset.name}
-                                                                onClick={() => addCategory(preset)}
-                                                                className={`flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-medium transition-all hover:scale-105 ${preset.bg} ${preset.color} border ${preset.border}`}
-                                                            >
-                                                                <Icon name={preset.icon} size={16} />
-                                                                <span className="mt-1">{preset.name}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-2 pt-2">
-                                                    <button onClick={() => setShowAddCatInput(false)} className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs font-bold">İptal</button>
-                                                    <button onClick={() => addCategory()} className="flex-1 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold">Oluştur</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => setShowAddCatInput(true)} className="flex flex-col items-center gap-2 w-full h-full justify-center">
-                                                <div className="p-4 bg-slate-50 rounded-full"><Icon name="plus" size={32} /></div>
-                                                <span className="font-semibold">Kategori Ekle</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* --- PROFİL SEKMESİ --- */}
-                        {activeTab === 'profile' && (
-                            <div className="animate-fadeIn max-w-lg mx-auto">
-                                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white">
-                                    <div className="flex flex-col items-center mb-8">
-                                        <div 
-                                            className="w-32 h-32 bg-gradient-to-tr from-sky-400 to-blue-500 rounded-full flex items-center justify-center text-white mb-4 shadow-lg cursor-pointer overflow-hidden relative group hover:ring-4 hover:ring-sky-200 transition-all"
-                                            onClick={() => fileInputRef.current.click()}
-                                            title="Fotoğrafı değiştir"
-                                        >
-                                            {photoURL ? (
-                                                <img src={photoURL} alt="Profil" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Icon name="user" size={48} />
-                                            )}
-                                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Icon name="camera" size={24} className="text-white" />
-                                            </div>
-                                        </div>
-                                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-
-                                        <h2 className="text-2xl font-bold text-slate-700">{username || "İsimsiz Kullanıcı"}</h2>
-                                        <p className="text-slate-400 text-sm">{user.email}</p>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-600 ml-1">Kullanıcı Adı</label>
-                                            <div className="flex gap-2">
-                                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Adınızı girin..."
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-200 transition-all" />
-                                                <button onClick={handleSaveProfile} className="bg-sky-500 hover:bg-sky-600 text-white px-6 rounded-xl font-semibold transition-colors shadow-sm">Kaydet</button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 mt-8">
-                                            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
-                                                <div className="text-blue-500 mb-1"><Icon name="droplets" size={24} className="mx-auto" /></div>
-                                                <div className="text-2xl font-bold text-slate-700">{waterCount}</div>
-                                                <div className="text-xs text-slate-500 font-medium">Bugün İçilen Su</div>
-                                            </div>
-                                            <div className="bg-green-50 p-4 rounded-2xl border border-green-100 text-center">
-                                                <div className="text-green-500 mb-1"><Icon name="check-circle-2" size={24} className="mx-auto" /></div>
-                                                <div className="text-2xl font-bold text-slate-700">{reminders.filter(r => r.completed).length}</div>
-                                                <div className="text-xs text-slate-500 font-medium">Tamamlanan Görev</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                    </div>
-                </div>
-            );
+            const pt = lineIntersection(L1, L2);
+            if (!pt || !validatePoint(pt)) break;
+            newPoints.push(pt);
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+        if (newPoints.length !== cycle.length) break;
+        
+        path.push(...newPoints);
+        currentLines = newPoints.map((_,i) => 
+            lineFromPoints(newPoints[i], newPoints[(i+1)%newPoints.length]));
+    }
+
+    path.push(startPoint);
+    return path;
+}
+
+// Polygon alan hesaplama
+function polygonArea(p) {
+    return Math.abs(p.reduce((a,c,i) => 
+        a + c[0]*p[(i+1)%p.length][1] - c[1]*p[(i+1)%p.length][0], 0)) / 2;
+}
+
+
+function drawInfinity() {
+	clearPathCoordinates();
+	const lat1 = document.getElementById('pole_lat1').value;
+	const lng1 = document.getElementById('pole_lng1').value;
+	const lat2 = document.getElementById('pole_lat2').value;
+	const lng2 = document.getElementById('pole_lng2').value;
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
+	
+	drone_current_location = [drone_lat, drone_lng];
+	var poles = [[lat1, lng1], [lat2, lng2]];
+	rote_coors = calculateInfinityPath(poles, drone_current_location, inf_dot_count, inf_pole_dist);
+	addPathCoordinate(false, rote_coors[0], 0);
+	for(var i = 1; i < rote_coors.length; i++) {
+		addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+	}
+	addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+}
+
+function drawCirclePath() {
+	clearPathCoordinates();
+	const lat1 = document.getElementById('pole_lat1').value;
+	const lng1 = document.getElementById('pole_lng1').value;
+	const lat2 = document.getElementById('pole_lat2').value;
+	const lng2 = document.getElementById('pole_lng2').value;
+	const drone_lat = document.getElementById('border_lat1').value;
+	const drone_lng = document.getElementById('border_lng1').value;
+	const inf_dot_count = document.getElementById('dot_count').value;
+	const inf_pole_dist = document.getElementById('pole_dist').value;
+	
+	drone_current_location = [drone_lat, drone_lng];
+	var poles = [[lat1, lng1], [lat2, lng2]];
+	rote_coors = calculateHalfCirclePath(poles, drone_current_location, inf_dot_count, inf_pole_dist);
+	addPathCoordinate(false, rote_coors[0], 0);
+	for(var i = 1; i < rote_coors.length; i++) {
+		addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+	}
+	addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+}
+
+function drawSearchPath(mission_type) {
+	if(!is_msn_running) {
+		selected_msn = mission_type + 1;
+		clearPathCoordinates();
+		const p_lat1 = document.getElementById('pole_lat1').value;
+		const p_lng1 = document.getElementById('pole_lng1').value;
+		const p_lat2 = document.getElementById('pole_lat2').value;
+		const p_lng2 = document.getElementById('pole_lng2').value;
+		const lat1 = document.getElementById('border_lat1').value;
+		const lng1 = document.getElementById('border_lng1').value;
+		const lat2 = document.getElementById('border_lat2').value;
+		const lng2 = document.getElementById('border_lng2').value;
+		const lat3 = document.getElementById('border_lat3').value;
+		const lng3 = document.getElementById('border_lng3').value;
+		const lat4 = document.getElementById('border_lat4').value;
+		const lng4 = document.getElementById('border_lng4').value;
+		pole_coors = [[p_lat1, p_lng1], [p_lat2, p_lng2]];
+		border_coors = [
+			[lat1, lng1],
+			[lat2, lng2],
+			[lat3, lng3],
+			[lat4, lng4]
+		];
+		
+		/*drone_current_location = [41.006, 28.978];
+		pole_coors = [[41.009351, 28.976004], [41.007000, 28.980017]];
+		border_coors = [
+			[41.008493, 28.984373],
+			[41.002682, 28.975583],
+			[41.007841, 28.970426],
+			[41.013029, 28.978623]
+		];*/
+		rote_coors = calculateSearchPath(pole_coors, drone_current_location, border_coors);
+		console.log(rote_coors);
+		addPathCoordinate(false, rote_coors[0], 0);
+		for(var i = 1; i < rote_coors.length; i++) {
+			addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0);
+		}
+		addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 0);
+	} else {
+		bottomAlert("Görev " + selected_msn + " devam ediyor. Bu yüzden görev hesaplanmadı.");
+	}
+}
+
+var time_couter_interval;
+
+
+function downloadMissionCoors() {
+	downloadCoors(rote_coors);
+}
+
+function downloadCoors(coors) {
+	// Waypoints dosyasının içeriğini oluştur
+	let content = "QGC WPL 110\n";
+	
+	// İlk waypoint (HOME)
+	if (coors.length > 0) {
+		content += `0\t1\t0\t16\t0\t0\t0\t0\t${coors[0][0]}\t${coors[0][1]}\t100.720000\t1\n`;
+	}
+	
+	// Takeoff komutu
+	content += "1\t0\t3\t22\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t2.000000\t1\n";
+	
+	// Diğer waypointler
+	for (let i = 1; i < coors.length; i++) {
+		content += `${i+1}\t0\t3\t16\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${coors[i][0]}\t${coors[i][1]}\t3.000000\t1\n`;
+	}
+	
+	// Return-to-launch komutu
+	content += `${coors.length+1}\t0\t3\t20\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t3.000000\t1`;
+	
+	// Blob oluştur
+	const blob = new Blob([content], { type: 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	
+	// İndirme için link oluştur
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'output.waypoints';
+	document.body.appendChild(a);
+	a.click();
+	
+	// Temizlik
+	setTimeout(() => {
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}, 100);
+	
+	return content;
+}
+
+async function stopSelectedMission() {
+	clearPathCoordinates();
+	if (time_couter_interval != null) {
+		clearInterval(time_couter_interval);
+		$(".text_data_value_text:eq(2)").text("00:00");
+	}
+	var red_data;
+	if(is_login_ok) {
+		var red_data = await readData("d/dt/dev/coor");
+		writeData("client/type", 4);
+		writeData("client/mis_coor", red_data);
+	} else {
+		red_data = [0, 0];
+	}
+	
+	addPathCoordinate(false, drone_current_location, 0);
+	addPathCoordinate(drone_current_location, red_data, 0);
+}
+
+function countMissionTime() {
+	mission_sec++;
+	$(".text_data_value_text:eq(2)").text(Math.floor(mission_sec / 60).toString().padStart(2, '0') + ":" + (mission_sec % 60).toString().padStart(2, '0'));
+	
+}
+
+function isStateAchieved(current_data, required_data) {
+	if(Math.abs(current_data.coor[0] - required_data.coor[0]) > 0.0002)
+		return false;
+	
+	if(Math.abs(current_data.coor[1] - required_data.coor[1]) > 0.0002)
+		return false;
+	
+	/*if(abs(current_data.angle - required_data.angle) > 0.1)
+		return false;
+	
+	if(abs(current_data.altitude - required_data.altitude) > 0.01)
+		return false;*/
+	
+	return true;
+}
+
+
+
+function openPageRequest(pagenum) {
+	if(is_login_ok) {
+		openPage(pagenum);
+	} else {
+		openPage(0);
+	}
+}
+
+async function writeScreenData() {
+	if(is_login_ok) {//if(is_login_ok && await checkUserOnline("")) {
+		var red_data = await readData("d/dt/dev");
+		//var states[7] = {"Hazır Değil", "Beklemede", "Arıza", "Manuel", "map_outer_divlandırma", "Yük Taşıma", "Şarj"};
+		if (red_data) {
+			if(is_msn_running) {
+				var required_data = {
+					"coor": rote_coors[current_msn_step],
+					"angle": red_data.angle,
+					"altitude": red_data.altitude
+				};
+				
+				//if(isStateAchieved(red_data, required_data)) {
+				if(isStateAchieved(red_data, required_data)) {
+					current_msn_step++;
+					clearPathCoordinates();
+					addPathCoordinate(rote_coors[rote_coors.length - 1], rote_coors[0], 2);
+					for(var i = 1; i < current_msn_step; i++) {
+						addPathCoordinate(rote_coors[i - 1], rote_coors[i], 2);
+					}
+					
+					for(var i = current_msn_step; i < rote_coors.length; i++) {
+						addPathCoordinate(rote_coors[i - 1], rote_coors[i], 1);
+					}
+				}
+			}
+			
+			drone_current_location = red_data.coor;
+			updateDroneLocation(drone_current_location);
+			$(".text_data_value_text:eq(0)").text("Bağlı");
+			$(".text_data_value_text:eq(1)").text(red_data.state);
+			$(".text_data_value_text:eq(3)").text(red_data.current + " Amper");
+			$(".text_data_value_text:eq(4)").text(red_data.voltage + " Volt");
+			$(".text_data_value_text:eq(5)").text(red_data.temp + "°C");
+			
+			gauge_spd.set(red_data.speed);
+			gauge_pwr.set(red_data.percent);
+			//console.log("Okunan veri:", red_data);
+		} else {
+			bottomAlert("Veri okunamadı.");
+		}
+	} else {
+		$(".text_data_value_text:not(:eq(0),:eq(2))").text("-");
+		$(".text_data_value_text:eq(0)").text("Bağlı Değil");
+		
+		gauge_spd.set(0);
+		gauge_pwr.set(0);
+	}
+}
+
+
+function openPage(pagenum) {
+	
+	switch (pagenum) {
+		case 0:
+			$(".main_menu_outer_div").css("display", "none");
+			$(".main_container_login").css("display", "");
+			$(".fixed_menu_buttons_left:eq(0)").attr("onclick","");
+			$(".fixed_menu_buttons_left:eq(0) > p").text("Giriş Yap");
+			$(".fixed_menu_buttons_left").removeClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(0)").addClass("fixed_menu_button_selected");
+			break;
+		case 1:
+			$(".main_menu_outer_div").css("display", "none");
+			$(".main_container_login").css("display", "none");
+			$(".main_page_1").css("display", "");
+			$(".fixed_menu_buttons_left").removeClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(1)").addClass("fixed_menu_button_selected");
+			$(".main_container_login").css("display", "none");
+			$(".fixed_menu_buttons_left:eq(0)").attr("onclick","signoutfirebase()");
+			$(".fixed_menu_buttons_left:eq(0) > p").text("Çıkış Yap");
+			
+			break;
+		case 2:
+			$(".main_container_login").css("display", "none");
+			$(".main_menu_outer_div").css("display", "none");
+			$(".main_page_2").css("display", "");
+			$(".fixed_menu_buttons_left").removeClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(2)").addClass("fixed_menu_button_selected");
+			
+			$(".fixed_menu_buttons_left:eq(0)").attr("onclick","signoutfirebase()");
+			$(".fixed_menu_buttons_left:eq(0) > p").text("Çıkış Yap");
+	  
+			break;
+		case 3:
+			$(".main_container_login").css("display", "none");
+			$(".main_menu_outer_div").css("display", "none");
+			$(".main_page_3").css("display", "");
+			$(".fixed_menu_buttons_left").removeClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(3)").addClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(0)").attr("onclick","signoutfirebase()");
+			$(".fixed_menu_buttons_left:eq(0)").text("Çıkış Yap");
+	  
+			break;
+		case 4:
+			$(".main_container_login").css("display", "none");
+			$(".main_menu_outer_div").css("display", "none");
+			$(".main_page_4").css("display", "");
+			$(".fixed_menu_buttons_left").removeClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(4)").addClass("fixed_menu_button_selected");
+			$(".fixed_menu_buttons_left:eq(0)").attr("onclick","signoutfirebase()");
+			$(".fixed_menu_buttons_left:eq(0)").text("Çıkış Yap");
+	  
+			break;
+	}
+	
+}
+
+
+var ismenuopen = false;
+	var is_mobile_phone = ( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) ? true : false;
+	function goMainPage() {
+		var url = window.location.href;
+		var result = url.indexOf(".com") + 4;
+		window.open(url.slice(0, result), '_self');
+		
+	}
+	
+	function openLeftMenu() {
+	$(".fixed_menu_all_buttons_cont").stop();
+	$(".menu_closer").stop();
+	$('.fixed_menu_all_buttons_cont').animate(
+		{ left: ismenuopen ? -200 : 0 }, 200);
+	if(ismenuopen) {
+		$(".menu_closer").fadeOut(200);
+		$(".menu_opener").addClass('fa-bars');
+		$(".menu_opener").addClass('fa');
+		
+		$(".menu_opener").removeClass('fa-regular');
+		$(".menu_opener").removeClass('fa-solid');
+		$(".menu_opener").removeClass('fa-xmark');
+		
+		$("html body").css("overflow-y", "auto");
+		if(!is_mobile_phone) {
+			$(".main_div").css("width", "100%");
+			$(".fixed_menu_right_cont").css("width", parseInt($( ".fixed_menu_right_cont" ).width()) - 14);
+		}
+		//console.log(is_mobile_phone);
+	}
+	else {
+		$(".menu_closer").fadeIn(200);
+		$(".menu_opener").removeClass('fa-bars');
+		$(".menu_opener").removeClass('fa');
+		
+		$(".menu_opener").addClass('fa-regular');
+		$(".menu_opener").addClass('fa-solid');
+		$(".menu_opener").addClass('fa-xmark');
+		
+		$("html body").css("overflow-y", "hidden");
+		if(!is_mobile_phone) {
+			$(".main_div").css("width", "calc(100% - 14px)");
+			$(".fixed_menu_right_cont").css("width", parseInt($( ".fixed_menu_right_cont" ).width()) + 14.5);
+		}
+	}
+	//fa-regular fa-solid fa-xmark
+
+	ismenuopen = !ismenuopen;
+
+	//overflow: hidden;
+}
+
+var alert_interval_temp;
+
+function bottomAlert(str, alert_type) {
+	alert_interval_temp = setInterval(bottomAlertDisappear, 2500);
+	//<div style="display: flex; color: #ff9b00; align-items: center; font-weight: bold;"><i class="fa-solid fa-square-exclamation car_text_data_icon_i"></i><p>-deneme</p></div>
+	
+	var color = "#ff9b00";
+	if (alert_type)
+		color = "#edff00";
+	$(".copywrite_part").html("<div style=\"display: flex; color: " + color + "; align-items: center; font-weight: bold;\"><i class=\"fa-solid fa-square-exclamation car_text_data_icon_i\"></i><p>-" + str + "</p></div>");
+	
+}
+
+function bottomAlertDisappear(str) {
+	clearInterval(alert_interval_temp);
+	$(".copywrite_part").html("<p class=\"copywrite_text\">Bu websitesinin tüm hakları <b>Engrare®</b> ekibine aittir. 3. kişilerin kullanımına kapalıdır.</p>").css("color", "");
+}
+
+function deleteCookie(cookieName) {
+    document.cookie = cookieName + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+function readCookie(cookieName) {
+    var name = cookieName + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENGRARE - İHA Batarya & Limit Analizörü</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0f1a;
+            --glass-bg: rgba(20, 28, 43, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --accent: #0ea5e9;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1), transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.1), transparent 30%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column; /* Üst menü için esneklik */
+            color: var(--text-main);
+        }
+
+        /* --- ÜST MENÜ (NAVBAR) --- */
+        .navbar {
+            width: 100%;
+            height: 70px;
+            background: rgba(10, 15, 26, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+            padding: 5px 0;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-main);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-brand svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+            animation: spin 20s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .team-name-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .team-name-main {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            line-height: 1.1;
+        }
+
+        .team-name-sub {
+            font-size: 0.65rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* --- ANA İÇERİK --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 1000px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .panel { background: #0c121e; padding: 35px; display: flex; flex-direction: column; gap: 20px; }
+
+        .header h2 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 6px; }
+        .header p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
+
+        .tabs { display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 6px; margin-bottom: 5px; }
+        .tab-btn {
+            flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: none;
+            border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.95rem;
+        }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 15px var(--primary-glow); }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group.full { grid-column: span 2; }
+        
+        label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500;}
+        
+        input, select {
+            width: 100%; padding: 15px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+            color: white; font-size: 1rem; outline: none; transition: all 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+        
+        select { font-weight: 500; cursor: pointer;}
+        select option { color: #000; background-color: #fff; }
+
+        .dynamic-section { display: none; opacity: 0; transition: opacity 0.4s ease; }
+        .dynamic-section.active { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; opacity: 1; }
+
+        /* Sağ Panel */
+        .info-card {
+            background: linear-gradient(145deg, rgba(30,41,59,0.5), rgba(15,23,42,0.5));
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px;
+            text-align: center; display: flex; flex-direction: column; gap: 15px;
+        }
+        
+        .step-badge { display: inline-block; background: var(--warning); color: #000; font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; align-self: center;}
+        
+        .thrust-grid { display: grid; gap: 15px; }
+        .thrust-grid.split { grid-template-columns: 1fr 1fr; }
+        
+        .thrust-box { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px 10px; border: 1px solid transparent; }
+        .thrust-box.front { border-color: rgba(14, 165, 233, 0.3); }
+        .thrust-box.rear { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
+        
+        .t-title { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        .t-val { font-size: 2.2rem; font-weight: 700; color: #fff; line-height: 1; }
+        .t-unit { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+
+        .instruction { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; padding: 0 10px; }
+
+        .highlight-input { border-color: var(--warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.1); background: rgba(245, 158, 11, 0.05); }
+        .highlight-input:focus { border-color: var(--warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+
+        .eff-inputs { display: grid; gap: 15px; }
+        .eff-inputs.split { grid-template-columns: 1fr 1fr; }
+
+        .final-result {
+            margin-top: auto; background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 20px; padding: 25px;
+            text-align: center; opacity: 0.4; transition: all 0.4s ease;
+        }
+        .final-result.active { opacity: 1; border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1); background: rgba(16, 185, 129, 0.1); }
+        
+        .final-cap { font-size: 2.5rem; font-weight: 700; color: var(--success); text-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        
+        .details-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;
+            background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px;
+        }
+        
+        .detail-item { display: flex; flex-direction: column; gap: 4px; }
+        .detail-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+        .detail-value { font-size: 1.1rem; color: #fff; font-weight: 600; }
+        .detail-value.danger { color: var(--danger); }
+
+        .toast {
+            position: fixed; bottom: 30px; right: -400px; background: var(--danger); color: white;
+            padding: 15px 25px; border-radius: 12px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000;
+        }
+        .toast.show { right: 30px; }
+
+        @media (max-width: 900px) { 
+            .navbar { flex-direction: column; height: auto; padding: 15px; gap: 15px; }
+            .container { grid-template-columns: 1fr; } 
+            .panel { padding: 25px; } 
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="#">Çıkış Yap</a>
+            <a href="#">Kontrol Anasayfası</a>
+            <a href="#">Cihazım</a>
+            <a href="#">Görev Girdisi</a>
+		<a href="#" class="active">Batarya Hesaplayıcı</a>
+            <a href="#">Ayarlar</a>
+        </div>
+        <a href="#" class="nav-brand">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <div class="team-name-group">
+                <span class="team-name-main">ENGRARE</span>
+                <span class="team-name-sub">Teknofest Team</span>
+            </div>
+        </a>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="panel">
+                <div class="header">
+                    <h2>Sistem Parametreleri</h2>
+                    <p>Otonom seyir ve dinamik voltaj analizi.</p>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchMode('hover')" id="btn-hover">Hover (Eşit Yük)</button>
+                    <button class="tab-btn" onclick="switchMode('cruise')" id="btn-cruise">Seyir (Dinamik Yük)</button>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Toplam Ağırlık (kg)</label>
+                        <input type="number" id="weight" value="4.0" step="0.1" oninput="calculatePhysics()">
+                    </div>
+                    <div class="input-group">
+                        <label>Motor Sayısı</label>
+                        <input type="number" id="motors" value="4" step="2" min="4" oninput="calculatePhysics()">
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group full">
+                        <label>Sistem Voltajı (Batarya Hücresi)</label>
+                        <select id="cells" onchange="calculateFinal()">
+                            <option value="1">1S (Nominal: 3.7V)</option>
+                            <option value="2">2S (Nominal: 7.4V)</option>
+                            <option value="3">3S (Nominal: 11.1V)</option>
+                            <option value="4">4S (Nominal: 14.8V)</option>
+                            <option value="5">5S (Nominal: 18.5V)</option>
+                            <option value="6" selected>6S (Nominal: 22.2V)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="dynamic-section" id="cruise-inputs">
+                    <div class="input-group">
+                        <label>Seyir Hızı (m/s)</label>
+                        <input type="number" id="speed" value="30" step="1" oninput="calculatePhysics()">
+                    </div>
+                    <div class="input-group">
+                        <label>Direnç Kat. (Cd)</label>
+                        <input type="number" id="drag" value="1.3" step="0.1" oninput="calculatePhysics()">
+                    </div>
+                    <div class="input-group full">
+                        <label>Ön Kesit Alanı (m²)</label>
+                        <input type="number" id="area" value="0.05" step="0.01" oninput="calculatePhysics()">
+                    </div>
+                </div>
+
+                <div class="input-row" style="margin-top: 10px;">
+                    <div class="input-group">
+                        <label>Uçuş Süresi (dk)</label>
+                        <input type="number" id="time" value="10" step="1" oninput="calculateFinal()">
+                    </div>
+                    <div class="input-group">
+                        <label>Güvenlik Payı (%)</label>
+                        <input type="number" id="safety" value="80" step="1" oninput="calculateFinal()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                
+                <div class="info-card">
+                    <span class="step-badge">Aşama 1: Fiziksel Limit Testi</span>
+                    
+                    <div class="thrust-grid" id="thrust-hover-view">
+                        <div class="thrust-box">
+                            <div class="t-title">Tüm Motorlar Eşit İtki</div>
+                            <div class="t-val" id="val-hover">0<span class="t-unit">g</span></div>
+                        </div>
+                    </div>
+
+                    <div class="thrust-grid split" id="thrust-cruise-view" style="display: none;">
+                        <div class="thrust-box front">
+                            <div class="t-title" style="color: var(--accent);">Ön Motorlar</div>
+                            <div class="t-val" id="val-front">0<span class="t-unit">g</span></div>
+                        </div>
+                        <div class="thrust-box rear">
+                            <div class="t-title" style="color: var(--danger);">Arka Motorlar (Zorlanan)</div>
+                            <div class="t-val" id="val-rear">0<span class="t-unit">g</span></div>
+                        </div>
+                    </div>
+
+                    <p class="instruction" id="inst-text">Datasheet'ten yukarıdaki itkiye karşılık gelen verim (g/W) değerini girin.</p>
+                </div>
+
+                <div class="eff-inputs" id="eff-container">
+                    <div class="input-group" id="input-hover-wrapper">
+                        <label style="color: var(--warning);">Tablodan Okunan Verim (g/W)</label>
+                        <input type="number" id="eff-hover" class="highlight-input" placeholder="Örn: 5.04" step="0.01" oninput="calculateFinal()">
+                    </div>
+                    <div class="input-group" id="input-front-wrapper" style="display:none;">
+                        <label style="color: var(--accent);">Ön Motor Verimi (g/W)</label>
+                        <input type="number" id="eff-front" class="highlight-input" placeholder="Örn: 6.10" step="0.01" oninput="calculateFinal()">
+                    </div>
+                    <div class="input-group" id="input-rear-wrapper" style="display:none;">
+                        <label style="color: var(--danger);">Arka Motor Verimi (g/W)</label>
+                        <input type="number" id="eff-rear" class="highlight-input" placeholder="Örn: 4.55" step="0.01" oninput="calculateFinal()">
+                    </div>
+                </div>
+
+                <div class="final-result" id="final-box">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Minimum Kapasite İhtiyacı</div>
+                    <div class="final-cap" id="display-cap">0<span style="font-size: 1.2rem; color: #fff; font-weight: 500;"> mAh</span></div>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Ortalama Akım (Tam Pil)</span>
+                            <span class="detail-value" id="display-current-avg">0.0A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Max Akım (Zayıf Pil)</span>
+                            <span class="detail-value danger" id="display-current-max">0.0A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Güç Tüketimi</span>
+                            <span class="detail-value" id="display-power">0W</span>
+                        </div>
+                        <div class="detail-item" id="pitch-container" style="display:none;">
+                            <span class="detail-label">Gövde Eğimi</span>
+                            <span class="detail-value" id="display-pitch">0°</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Uyarı</div>
+
+    <script>
+        let currentMode = 'hover';
+        let thrustHover = 0, thrustFront = 0, thrustRear = 0, pitchAngleDeg = 0;
+
+        window.onload = () => calculatePhysics();
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-hover').classList.remove('active');
+            document.getElementById('btn-cruise').classList.remove('active');
+            document.getElementById('btn-' + mode).classList.add('active');
+
+            const isCruise = mode === 'cruise';
+            const cruiseInputs = document.getElementById('cruise-inputs');
+            
+            if(isCruise) {
+                cruiseInputs.classList.add('active');
+                setTimeout(() => cruiseInputs.style.display = 'grid', 10);
+            } else {
+                cruiseInputs.classList.remove('active');
+                setTimeout(() => cruiseInputs.style.display = 'none', 400); // Animasyon süresi
+            }
+
+            document.getElementById('thrust-hover-view').style.display = isCruise ? 'none' : 'grid';
+            document.getElementById('thrust-cruise-view').style.display = isCruise ? 'grid' : 'none';
+            document.getElementById('pitch-container').style.display = isCruise ? 'flex' : 'none';
+
+            const effContainer = document.getElementById('eff-container');
+            if(isCruise) {
+                effContainer.classList.add('split');
+                document.getElementById('input-hover-wrapper').style.display = 'none';
+                document.getElementById('input-front-wrapper').style.display = 'flex';
+                document.getElementById('input-rear-wrapper').style.display = 'flex';
+                document.getElementById('inst-text').innerHTML = "Arka motorlar daha fazla zorlanır. <b>İki farklı verim değerini</b> datasheetten bularak girin.";
+            } else {
+                effContainer.classList.remove('split');
+                document.getElementById('input-hover-wrapper').style.display = 'flex';
+                document.getElementById('input-front-wrapper').style.display = 'none';
+                document.getElementById('input-rear-wrapper').style.display = 'none';
+                document.getElementById('inst-text').innerHTML = "Datasheet'ten yukarıdaki itkiye karşılık gelen verim (g/W) değerini girin.";
+            }
+            document.getElementById('final-box').classList.remove('active');
+            calculatePhysics();
+        }
+
+        function calculatePhysics() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const motors = parseFloat(document.getElementById('motors').value);
+            if(!weight || !motors || motors < 4) return;
+
+            const g = 9.81;
+
+            if (currentMode === 'hover') {
+                thrustHover = (weight * 1000) / motors;
+                document.getElementById('val-hover').innerHTML = Math.round(thrustHover) + '<span class="t-unit">g</span>';
+                pitchAngleDeg = 0;
+            } else {
+                const speed = parseFloat(document.getElementById('speed').value) || 0;
+                const dragCd = parseFloat(document.getElementById('drag').value) || 0;
+                const area = parseFloat(document.getElementById('area').value) || 0;
+                
+                const dragForce = 0.5 * 1.225 * Math.pow(speed, 2) * dragCd * area; 
+                const weightForce = weight * g; 
+                const pitchRad = Math.atan(dragForce / weightForce);
+                pitchAngleDeg = pitchRad * (180 / Math.PI);
+                
+                const totalThrustKg = weight / Math.cos(pitchRad);
+                const totalThrustGrams = totalThrustKg * 1000;
+
+                const rearRatio = 0.5 + Math.min((pitchAngleDeg / 90) * 0.25, 0.25);
+                const frontRatio = 1 - rearRatio;
+
+                const halfMotors = motors / 2;
+                thrustRear = (totalThrustGrams * rearRatio) / halfMotors;
+                thrustFront = (totalThrustGrams * frontRatio) / halfMotors;
+
+                document.getElementById('val-front').innerHTML = Math.round(thrustFront) + '<span class="t-unit">g</span>';
+                document.getElementById('val-rear').innerHTML = Math.round(thrustRear) + '<span class="t-unit">g</span>';
+                document.getElementById('display-pitch').innerText = pitchAngleDeg.toFixed(1) + '°';
+            }
+            calculateFinal();
+        }
+
+        function calculateFinal() {
+            const finalBox = document.getElementById('final-box');
+            let totalPowerW = 0;
+            const motors = parseFloat(document.getElementById('motors').value);
+            const halfMotors = motors / 2;
+
+            if (currentMode === 'hover') {
+                const eff = parseFloat(document.getElementById('eff-hover').value);
+                if (!eff || eff <= 0) { finalBox.classList.remove('active'); return; }
+                totalPowerW = (thrustHover * motors) / eff;
+            } else {
+                const effFront = parseFloat(document.getElementById('eff-front').value);
+                const effRear = parseFloat(document.getElementById('eff-rear').value);
+                if (!effFront || !effRear || effFront <= 0 || effRear <= 0) { finalBox.classList.remove('active'); return; }
+                
+                totalPowerW = ((thrustFront * halfMotors) / effFront) + ((thrustRear * halfMotors) / effRear);
+            }
+
+            const time = parseFloat(document.getElementById('time').value);
+            const safety = parseFloat(document.getElementById('safety').value) / 100;
+            const cells = parseFloat(document.getElementById('cells').value);
+
+            if (!time || time <= 0 || !safety || safety <= 0) return;
+
+            const cellNominal = 3.7;
+            const cellEmpty = 3.5; 
+            
+            const vNominal = cells * cellNominal;
+            const vEmpty = cells * cellEmpty;
+
+            const currentAvg = totalPowerW / vNominal;
+            const currentMax = totalPowerW / vEmpty; 
+
+            const capacityAh = (currentAvg * (time / 60)) / safety;
+            const capacityMah = capacityAh * 1000;
+
+            document.getElementById('display-cap').innerHTML = Math.round(capacityMah).toLocaleString('tr-TR') + '<span style="font-size: 1.2rem; color: #fff; font-weight: 500;"> mAh</span>';
+            document.getElementById('display-current-avg').innerText = currentAvg.toFixed(1) + 'A';
+            document.getElementById('display-current-max').innerText = currentMax.toFixed(1) + 'A';
+            document.getElementById('display-power').innerText = Math.round(totalPowerW) + 'W';
+            
+            finalBox.classList.add('active');
+        }
+    </script>
+</body>
+</html>

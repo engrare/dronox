@@ -1,320 +1,641 @@
-<!-- Copyright 2025 Kaya Sertel & ENGRARE®. All Rights Reserved. -->
 <!DOCTYPE html>
-<html  lang="tr" dir="ltr" data-cast-api-enabled="true">
+<html lang="tr" dir="ltr">
 <head>
-<title>ENGRARE-DRONOX</title>
-<link rel="icon" href="https://www.engrare.com/files/photos/engrare_logo.png" type="image/gif" sizes="48x48">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=0, minimum-scale=1">
-<meta property="og:type" content="website">
-<meta property="og:image" content="https://www.engrare.com/files/photos/title_icon.png" />
-<meta property="og:image:width" content="100" />
-<meta property="og:image:height" content="100" />
-<meta property="twitter:image" content="https://www.engrare.com/files/photos/title_icon.png"  />
-<meta property="og:title" content="Team Engrare WebSitesi">
-<meta property="og:url" content="https://www.engrare.com">
-<meta property="og:description" content="ENGRARE Drone Kontrol Sistemi websitesine hoş geldiniz.">
-<meta content="ENGRARE Drone Kontrol Sistemi websitesine hoş geldiniz." name="description">
-<noscript>
-<style>
-.main_noscript_div {
-	height:	300px;
-	width: 450px;
-	position: fixed;
-	z-index: 20;
-	top: 50%;
-	left: 50%;
-	margin-left: -227px;
-	margin-top: -152px;
-	background-color: grey;
-	color: white;
-	font-family: Atkinson Hyperlegible, sans-serif;
-	border-radius: 10px;
-	border: solid 4px white;
-}
-.noscript_text {
-	font-size: 25px;
-	text-align: center;
-	margin: 30px 40px;
-}
-.noscript_header {
-	text-align: center;
-	margin: 20px;
-}
-.noscript_button {
-	font-size: 20px;
-	position: fixed;
-	width: 150px;
-	height: 80px;
-	text-align: center;
-	margin-left: 50%;
-	left: -75px;
-	font-family: Atkinson Hyperlegible, sans-serif;
-	box-shadow: 4px 4px black;
-	cursor: pointer;
-	border: solid 2px black;
-}
-.noscript_button:hover {
-	box-shadow: 2px 2px black;
-	background-color: blue;
-	color: white;
-}
-.cover_page {
-	background-color: black;
-	opacity: 0.9;
-	width: 100%;
-	height: 100%;
-	position: fixed;
-	top: 0px;
-	left: 0px;
-	z-index: 19;
-}
- </style>
-<div class="main_noscript_div">
-<h1 class="noscript_header">JavaScript Error</h1>
-<h3 class="noscript_text">It looks like JavaScript closed or not supported in your browser</h3>
-<form target="_blank" action="https://support.google.com/adsense/answer/12654?hl=en"><button class="noscript_button">click for help!</button></form>
-</div>
-<div class="cover_page"></div>
-</noscript>
-<link href='https://fonts.googleapis.com/css?family=Atkinson Hyperlegible|Bebas Neue|Montserrat' rel='stylesheet'>
-<!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">-->
-<!-- Add the Swiper library -->
-
-<!-- Add the Swiper styles -->
-
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/all.css">
-	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-solid.css">
-	<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/sharp-light.css">
-	<script src="https://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-<script src="files/myScript.js"></script>
-<link rel="stylesheet" href="files/myStyle.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-	
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
-  import { getDatabase, ref, get, set, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBiWySgji6BIrn3d8noZ1c5NXYdq8C7ogU",
-    authDomain: "sample-firebase-ai-app-14b1c.firebaseapp.com",
-    databaseURL: "https://sample-firebase-ai-app-14b1c-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "sample-firebase-ai-app-14b1c",
-    storageBucket: "sample-firebase-ai-app-14b1c.firebasestorage.app",
-    messagingSenderId: "136159458580",
-    appId: "1:136159458580:web:20fee11d32eb7c8e93be01"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const database = getDatabase(app);
-
-  // DOM Elements
-  const loginForm = document.getElementById('login-form');
-  const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
-  
-
-  // Handle login form submission
-window.logintofirebase = function logintofirebase(username, password) {
-	var logindata = {
-		"username": "",
-		"password": ""
-	};
-	
-	if(typeof username === 'undefined') {
-		logindata.username = usernameInput.value;
-		logindata.password = passwordInput.value;
-	} else {
-		logindata.username = username;
-		logindata.password = password;
-	}
-
-    // Sign in with email and password
-    signInWithEmailAndPassword(auth, logindata.username, logindata.password)
-      .then((userCredential) => {
-        // Signed in successfully
-        const user = userCredential.user;
-        console.log('Giriş başarılı:', user);
-		if(!is_html_loaded) {
-			if(replaceHtmlWithUpdatedContent()) {
-				is_html_loaded = true;
-			} else {
-				alert("Bir hata oluştu. Dosya Yüklenemedi.");
-			}
-		}
-		setCookie(logincookiename, logindata.username + "|" + logindata.password, 30);
-		is_login_ok = true;
-
-      })
-      .catch((error) => {
-        console.error('Giriş hatası:', error);
-        alert('Giriş başarısız: ' + error.message);
-      });
-  }
-
-window.signoutfirebase = function signoutfirebase() {
-	signOut(auth)
-		.then(() => {
-			is_login_ok = false;
-			openPage(0);
-			$("#username, #password").val("");
-			console.log("Çıkış başarılı");
-		})
-		.catch((error) => {
-			console.error("Çıkış sırasında hata oluştu:", error);
-		});
-}
-
-window.readData = function readData(dataname) {
-  var DataRef = ref(database, dataname);
-  return get(DataRef)
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        return snapshot.val(); // Promise ile veriyi döndür
-      } else {
-        console.log('Veri bulunamadı.');
-        return null;
-      }
-    })
-    .catch((error) => {
-      console.error('Veri alma hatası:', error);
-      return null;
-    });
-};
-
-window.writeData = function writeData(dataname, writtenData) {
-	var DataRef = ref(database, "d/dt/" + dataname);
-	
-	set(DataRef, writtenData)
-	.then(() => {
-		console.log("Veri başarıyla yazıldı.");
-	})
-	.catch((error) => {
-		console.error("Veri yazma hatası:", error);
-	});
-}
-
-window.checkUserOnline = function checkUserOnline(userId) {
-    const userStatusRef = ref(database, `users/${userId}/status`);
+    <meta charset="UTF-8">
+    <title>ENGRARE - Otonom Yer İstasyonu V3</title>
+    <link rel="icon" href="https://www.engrare.com/files/photos/engrare_logo.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     
-    onValue(userStatusRef, (snapshot) => {
-        if (snapshot.exists()) {
-            console.log(`Kullanıcı durumu: ${snapshot.val()}`);
-        } else {
-            console.log("Kullanıcı bilgisi bulunamadı.");
+    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.4.2/css/all.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --bg-dark: #0a0f1a;
+            --glass-bg: rgba(20, 28, 43, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.4);
+            --accent: #0ea5e9;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
         }
-    });
-}
 
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.05), transparent 40%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
 
+        /* --- ÜST MENÜ (NAVBAR) --- */
+        .navbar {
+            width: 100%; height: 70px; background: rgba(10, 15, 26, 0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border); display: flex;
+            justify-content: space-between; align-items: center; padding: 0 40px;
+            position: sticky; top: 0; z-index: 1000;
+        }
 
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; position: relative; padding: 5px 0; cursor: pointer; }
+        .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+        .nav-links a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0%; height: 2px; background: var(--primary); transition: width 0.3s ease; box-shadow: 0 0 10px var(--primary-glow); }
+        .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
 
-    </script>
+        .nav-brand { display: flex; align-items: center; gap: 12px; color: white; text-decoration: none; }
+        .nav-brand svg { width: 32px; height: 32px; fill: var(--primary); animation: spin 20s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        .team-name-group { display: flex; flex-direction: column; justify-content: center; }
+        .team-name-main { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; line-height: 1.1; }
+        .team-name-sub { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
 
+        /* --- ANA İÇERİK & PANELLER --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; padding: 30px 40px; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel {
+            background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border); border-radius: 24px; padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        /* --- SAYFA 1: KONTROL ANASAYFASI --- */
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; height: calc(100vh - 150px); min-height: 600px; }
+        
+        .map-panel { padding: 0; overflow: hidden; position: relative; border-radius: 24px; border: 1px solid var(--glass-border); }
+        #map_outer_div { height: 100%; width: 100%; z-index: 1; background-color: #000; }
+
+        .controls-panel { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        .section-title { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        
+        input {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: white; font-size: 0.9rem; outline: none; transition: all 0.2s;
+        }
+        input:focus { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; }
+        .btn {
+            background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(14,165,233,0.1));
+            border: 1px solid rgba(59,130,246,0.3); color: white; padding: 15px; border-radius: 12px;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;
+            transition: all 0.3s ease; font-weight: 500; font-size: 0.85rem;
+        }
+        .btn i { font-size: 1.5rem; color: var(--accent); transition: transform 0.3s; }
+        .btn:hover { background: rgba(59,130,246,0.4); border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 20px var(--primary-glow); }
+        .btn:hover i { transform: scale(1.1); color: #fff; }
+
+        /* --- SAYFA 2: CİHAZIM --- */
+        .device-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: start; }
+        .drone-image-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
+        .drone-image-container img { max-width: 100%; height: auto; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.8)); transition: transform 0.5s; }
+        .drone-image-container:hover img { transform: translateY(-10px) scale(1.02); }
+
+        .specs-header { font-size: 1.8rem; font-weight: 700; margin-bottom: 25px; color: #fff; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;}
+        .specs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .spec-card { background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px; transition: background 0.3s; }
+        .spec-card:hover { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
+        .spec-icon { font-size: 1.8rem; color: var(--accent); width: 40px; text-align: center; }
+        .spec-details { display: flex; flex-direction: column; }
+        .spec-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .spec-value { font-size: 1.1rem; font-weight: 600; color: #fff; }
+
+        /* --- ALT BİLGİ --- */
+        .footer { text-align: center; padding: 15px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--glass-border); margin-top: auto;}
+
+        @media (max-width: 1024px) {
+            .dashboard-grid { grid-template-columns: 1fr; height: auto; }
+            .map-panel { height: 400px; }
+            .device-grid { grid-template-columns: 1fr; }
+            .specs-grid { grid-template-columns: repeat(2, 1fr); }
+            .navbar { padding: 0 20px; flex-wrap: wrap; height: auto; padding: 15px; justify-content: center; gap: 15px;}
+        }
+    </style>
 </head>
-
 <body>
 
-<!--<div class="fixed_menu_top"></div>-->
-<div class="menu_closer" onclick="openLeftMenu()"></div>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a class="nav-item active" data-target="page-1">Kontrol Anasayfası</a>
+            <a class="nav-item" data-target="page-2">Cihazım</a>
+            <a>Görev Girdisi</a>
+            <a href="https://dronox.engrare.com/batcalc/">Batarya Hesaplayıcı</a>
+            <a>Ayarlar</a>
+            <a>Kodu Güncelle</a>
+        </div>
+        <a class="nav-brand">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <div class="team-name-group">
+                <span class="team-name-main">ENGRARE</span>
+                <span class="team-name-sub">Teknofest Team</span>
+            </div>
+        </a>
+    </nav>
 
-<div class="fixed_menu_top noselect">
-	<div class="fixed_menu_cont">
-		<div class="fixed_menu_left_cont">
-			<div class="fixed_menu_button bar_button" onclick="openLeftMenu()">
-				<i class="fa fa-bars menu_opener"></i>
-			</div>
-			<div class="fixed_menu_all_buttons_cont">
-				<div class="fixed_menu_button fixed_menu_buttons_left fixed_menu_button_selected" onclick="openPageRequest(0)">
-					<p>Giriş Yap</p>
-				</div>
-				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_2" onclick="openPageRequest(1)">
-					<p>Kontrol Anasayfası</p>
-				</div>
-				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_3" onclick="openPageRequest(2)">
-					<p>Cihazım</p>
-				</div>
-				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_4" onclick="openPageRequest(3)">
-					<p>Görev Girdisi</p>
-				</div>
-				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_5" onclick="openPageRequest(4)">
-					<p>Ayarlar</p>
-				</div>
-				<div class="fixed_menu_button fixed_menu_buttons_left" id="fixed_menu_but_6" onclick="saveWebpage()">
-					<p>Kodu Güncelle</p>
-				</div>
-			</div>
-			
-		</div>
-		<div class="fixed_menu_logo_part">
-			<img src="https://www.engrare.com/files/photos/engrare_logo.png" height="80%">
-			<div class="fixed_menu_logo_text_part">
-				<p class="fixed_menu_logo_text">Engrare</p>
-				<hr class="fixed_menu_logo_hr" />
-				<p class="fixed_menu_logo_text">Teknofest Team</p>
-			</div>
-		</div>
-		<div class="fixed_menu_right_cont" onClick="menuState(2)">
-			<div class="fixed_menu_button fixed_menu_button_3">
-			<!--<div class="notification_num">3</div>
-				<i class="fa fa-bell notification_bell"></i>-->
-				<div class="notification_num"><i class="fa-solid fa-gear settings_button_top"></i></div>
-			<i class="fa-solid fa-gear settings_button_top"></i> 
-			</div>
-		</div>
-			
-	</div>
-</div>
-	
-	
+    <div class="main-content">
+        <div id="page-1" class="page active">
+            <div class="dashboard-grid">
+                
+                <div class="map-panel">
+                    <div id="map_outer_div"></div>
+                </div>
 
-<div class="main_div">
+                <div class="panel controls-panel">
+                    
+                    <div>
+                        <div class="section-title"><i class="fa-solid fa-tower-cell"></i> Direk Koordinatları</div>
+                        <div class="input-row">
+                            <input type="number" id="pole_lat1" placeholder="1. Direk Enlem" value="40.9607905" step="any">
+                            <input type="number" id="pole_lng1" placeholder="1. Direk Boylam" value="29.1335345" step="any">
+                            <input type="number" id="pole_lat2" placeholder="2. Direk Enlem" value="40.9608368" step="any">
+                            <input type="number" id="pole_lng2" placeholder="2. Direk Boylam" value="29.1333794" step="any">
+                        </div>
+                    </div>
 
-		<div class="fixed_menu_space"></div>
-		<div class="main_container_login">
-			<div class="main_container">
-				<div class="main_container_outer">
-					<div class="main_menu_content_outer">
-								<div class="main_container_inner_text">
-									 <h2>LOGIN</h2>
-								</div>
-								
-				<label for="username">Kullanıcı Adı:</label>
-				  <input type="email" id="username" placeholder="E-posta" required />
-				  <br />
-				  <label for="password">Şifre:</label>
-				  <input type="password" id="password" placeholder="Şifre" required />
-				  <br />
-				  <button type="submit" style="cursor: pointer;" onClick="logintofirebase()">Giriş Yap</button>
-				</div>
-				</div>
-			</div>
-		</div>
-<!--file-data-written-starting-place-->
-<div id="placeholder">
+                    <hr style="border: 0; border-top: 1px solid var(--glass-border);">
 
+                    <div>
+                        <div class="section-title"><i class="fa-solid fa-location-crosshairs"></i> Görev Parametreleri</div>
+                        <div class="input-row" style="margin-bottom: 10px;">
+                            <input type="number" id="border_lat1" placeholder="Drone Başlangıç Enlem" value="40.9607865" step="any">
+                            <input type="number" id="border_lng1" placeholder="Drone Başlangıç Boylam" value="29.1336407" step="any">
+                        </div>
+                        
+                        <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                            <div class="input-group">
+                                <label style="font-size:0.75rem; color:var(--text-muted); margin-left:5px;">Nokta Sayısı</label>
+                                <input type="number" id="dot_count" value="40" step="any" title="Dönüş pürüzsüzlüğü">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size:0.75rem; color:var(--warning); margin-left:5px; font-weight:bold;">Direğe Yaklaşma (m)</label>
+                                <input type="number" id="pole_dist" value="4" step="any" title="Direk etrafındaki güvenli dönüş yarıçapı">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size:0.75rem; color:var(--success); margin-left:5px; font-weight:bold;">Uçuş İrtifası (m)</label>
+                                <input type="number" id="flight_alt" value="10" step="0.5" title="Görev uçuş yüksekliği">
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="action-grid">
+                        <button class="btn" onclick="drawInfinity()">
+                            <i class="fa-solid fa-infinity"></i>
+                            <span>Sonsuz Çiz (2 Tur)</span>
+                        </button>
+                        <button class="btn" onclick="drawCirclePath()">
+                            <i class="fa-regular fa-circle-half-stroke"></i>
+                            <span>O-Ring Rota (2 Tur)</span>
+                        </button>
+                        <button class="btn" onclick="enterCoordinate()">
+                            <i class="fa-solid fa-location-pen"></i>
+                            <span>Koordinat Ekle</span>
+                        </button>
+                        <button class="btn" onclick="downloadMissionCoors()">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Görevi İndir (.waypoints)</span>
+                        </button>
+                    </div>
 
-</div>
+                </div>
+            </div>
+        </div>
 
-		
-	<div class="copywrite_part">
-<p class="copywrite_text">Bu websitesinin tüm hakları <b>Engrare®</b> ekibine aittir. 3. kişilerin kullanımına kapalıdır.</p>
-</div>
+        <div id="page-2" class="page">
+            <div class="device-grid">
+                <div class="drone-image-container panel">
+                    <img src="https://raw.githubusercontent.com/engrare/dronox/refs/heads/main/files/photos/drone_photo.png" alt="ENGRARE Drone">
+                </div>
+                <div class="panel">
+                    <h2 class="specs-header"><i class="fa-solid fa-drone"></i> Cihaz Teknik Özellikleri</h2>
+                    <div class="specs-grid">
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-gauge-max"></i></div><div class="spec-details"><span class="spec-label">Maksimum Hız</span><span class="spec-value">30 km/h</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-weight-hanging"></i></div><div class="spec-details"><span class="spec-label">Yük Kapasitesi</span><span class="spec-value">2.4 kg</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-hourglass-half"></i></div><div class="spec-details"><span class="spec-label">Çalışma Süresi</span><span class="spec-value">20 dakika</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-arrows-left-right-to-line"></i></div><div class="spec-details"><span class="spec-label">Genişlik</span><span class="spec-value">40 cm</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-arrows-up-down"></i></div><div class="spec-details"><span class="spec-label">Uzunluk</span><span class="spec-value">40 cm</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-line-height"></i></div><div class="spec-details"><span class="spec-label">Yükseklik</span><span class="spec-value">10 cm</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-weight-scale"></i></div><div class="spec-details"><span class="spec-label">Ağırlık</span><span class="spec-value">1.6 kg</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-arrows-from-line"></i></div><div class="spec-details"><span class="spec-label">Manuel Menzili</span><span class="spec-value">2 km</span></div></div>
+                        <div class="spec-card"><div class="spec-icon"><i class="fa-solid fa-microchip"></i></div><div class="spec-details"><span class="spec-label">Kontrolcü</span><span class="spec-value">Pixhawk 2.4.8</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="footer">
+        © 2026 ENGRARE® Teknofest Team. Tüm Hakları Saklıdır.
+    </div>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // --- 1. SEKMELER ARASI GEÇİŞ ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
 
-</div>
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                const targetId = item.getAttribute('data-target');
+                pages.forEach(page => page.classList.remove('active'));
+                document.getElementById(targetId).classList.add('active');
+                if(targetId === 'page-1') { setTimeout(() => { map_outer_div.invalidateSize(); }, 100); }
+            });
+        });
 
+        // --- 2. GOOGLE SATELLITE (22x ZOOM YÜKSEK ÇÖZÜNÜRLÜK) ---
+        let map_outer_div, droneMarker;
+        let drone_current_location = [40.9609065, 29.1334407];
+        let pathElements = [];
+        let poleElements = [];
+        let rote_coors = [];
 
+        map_outer_div = L.map('map_outer_div').setView(drone_current_location, 19);
+        
+        // Esri yerine yüksek çözünürlüklü Google Uydu Haritası eklendi
+        L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 22,
+            attribution: '&copy; Google Maps - ENGRARE®'
+        }).addTo(map_outer_div);
+
+        droneMarker = L.marker(drone_current_location, {
+            icon: L.icon({
+                iconUrl: 'https://dronox.engrare.com/files/photos/drone_logo.png',
+                iconSize: [50, 50],
+                iconAnchor: [25, 25] 
+            })
+        }).addTo(map_outer_div);
+
+        const line_type_json = [
+            { "line": { color: "#ff0000", weight: 3, opacity: 0.8, dashArray: "5,5" }, "marker": { radius: 3, fillColor: "#ff0000", color: "#ffffff", weight: 1, opacity: 1, fillOpacity: 0.9 } },
+            { "line": { color: "#e5c13d", weight: 3, opacity: 0.8, dashArray: "5,5" }, "marker": { radius: 3, fillColor: "#e5c13d", color: "#ffffff", weight: 1, opacity: 1, fillOpacity: 0.9 } }
+        ];
+
+        function addPoleCoordinate(coordinate) {
+            const poleMarker = L.circleMarker(coordinate, { radius: 8, fillColor: "#ffffff", color: "#000000", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map_outer_div);
+            poleElements.push(poleMarker);
+        }
+
+        function addPathCoordinate(old_coordinate, coordinate, line_type) {
+            if (old_coordinate) {
+                const line = L.polyline([old_coordinate, coordinate], line_type_json[line_type].line).addTo(map_outer_div);
+                pathElements.push(line);
+            }
+            const pathMarker = L.circleMarker(coordinate, line_type_json[line_type].marker).addTo(map_outer_div);
+            pathElements.push(pathMarker);
+        }
+
+        function clearPoleCoordinates() {
+            poleElements.forEach(element => map_outer_div.removeLayer(element));
+            poleElements = [];
+        }
+
+        function clearPathCoordinates() {
+            pathElements.forEach(element => map_outer_div.removeLayer(element));
+            pathElements = [];
+        }
+
+        function updateDroneLocation(coors) {
+            drone_current_location = coors;
+            droneMarker.setLatLng(coors);
+            map_outer_div.panTo(coors);
+        }
+
+        function enterCoordinate() {
+            const p_lat1 = parseFloat(document.getElementById('pole_lat1').value);
+            const p_lng1 = parseFloat(document.getElementById('pole_lng1').value);
+            const p_lat2 = parseFloat(document.getElementById('pole_lat2').value);
+            const p_lng2 = parseFloat(document.getElementById('pole_lng2').value);
+            const drone_lat = parseFloat(document.getElementById('border_lat1').value);
+            const drone_lng = parseFloat(document.getElementById('border_lng1').value);
+            
+            drone_current_location = [drone_lat, drone_lng];
+            droneMarker.setLatLng(drone_current_location);
+            map_outer_div.panTo(drone_current_location);
+            
+            clearPoleCoordinates();
+            addPoleCoordinate([p_lat1, p_lng1]);
+            addPoleCoordinate([p_lat2, p_lng2]);
+        }
+
+        // --- 3. JEODEZİK MATEMATİK VE OTONOM ROTA ALGORİTMALARI ---
+        const R_EARTH = 6371000;
+        const toRad = deg => deg * Math.PI / 180;
+        const toDeg = rad => rad * 180 / Math.PI;
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R_EARTH * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function getBearing(lat1, lon1, lat2, lon2) {
+            const dLon = toRad(lon2 - lon1);
+            const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+            const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+            return (toDeg(Math.atan2(y, x)) + 360) % 360;
+        }
+
+        function getDestination(lat, lon, distance, bearing) {
+            const brng = toRad(bearing);
+            const lat1 = toRad(lat), lon1 = toRad(lon);
+            const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance / R_EARTH) + Math.cos(lat1) * Math.sin(distance / R_EARTH) * Math.cos(brng));
+            const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(distance / R_EARTH) * Math.cos(lat1), Math.cos(distance / R_EARTH) - Math.sin(lat1) * Math.sin(lat2));
+            return [toDeg(lat2), toDeg(lon2)];
+        }
+
+        // Kavis Çizme Aracı (Arc Generator)
+        function generateArc(center, radius, startBearing, endBearing, direction, arcSteps) {
+            let pts = [];
+            let diff = (endBearing - startBearing) % 360;
+            if (direction === 1) { // Clockwise (CW)
+                if (diff < 0) diff += 360;
+                if (diff === 0) diff = 360;
+            } else { // Counter-Clockwise (CCW)
+                if (diff > 0) diff -= 360;
+                if (diff === 0) diff = -360;
+            }
+            let stepAngle = diff / arcSteps;
+            for(let i=0; i<=arcSteps; i++) {
+                let currentBearing = (startBearing + i*stepAngle + 360) % 360;
+                pts.push(getDestination(center[0], center[1], radius, currentBearing));
+            }
+            return pts;
+        }
+
+        // A. YENİ ŞARTNAME: LEMNISCATE OF BERNOULLI (SONSUZLUK) VE GÜVENLİ GİRİŞ
+        function calculateAdvancedInfinityPath(poles_coors, startPoint, steps, clearanceRadius) {
+            const [p1, p2] = poles_coors.map(c => [Number(c[0]), Number(c[1])]);
+            const start = [Number(startPoint[0]), Number(startPoint[1])];
+            const R = Number(clearanceRadius);
+            const numSteps = Number(steps);
+
+            // 1. En uzak direği tespit et (Giriş direği)
+            const dist1 = calculateDistance(start[0], start[1], p1[0], p1[1]);
+            const dist2 = calculateDistance(start[0], start[1], p2[0], p2[1]);
+            const [p_close, p_far] = dist1 < dist2 ? [p1, p2] : [p2, p1];
+
+            const D = calculateDistance(p_close[0], p_close[1], p_far[0], p_far[1]);
+            const midpoint = [(p_close[0] + p_far[0]) / 2, (p_close[1] + p_far[1]) / 2];
+            const anglePoles = getBearing(midpoint[0], midpoint[1], p_far[0], p_far[1]);
+
+            // Güvenlik Yardımcıları
+            function ensureSafety(pt) {
+                let dClose = calculateDistance(pt[0], pt[1], p_close[0], p_close[1]);
+                let dFar = calculateDistance(pt[0], pt[1], p_far[0], p_far[1]);
+                if (dClose < R * 0.99) pt = getDestination(p_close[0], p_close[1], R, getBearing(p_close[0], p_close[1], pt[0], pt[1]));
+                if (dFar < R * 0.99) pt = getDestination(p_far[0], p_far[1], R, getBearing(p_far[0], p_far[1], pt[0], pt[1]));
+                return pt;
+            }
+
+            function lineIntersectsCircle(pA, pB, center, r) {
+                const totalDist = calculateDistance(pA[0], pA[1], pB[0], pB[1]);
+                const brng = getBearing(pA[0], pA[1], pB[0], pB[1]);
+                for (let d = 0; d <= totalDist; d += 0.5) {
+                    const pt = getDestination(pA[0], pA[1], d, brng);
+                    if (calculateDistance(pt[0], pt[1], center[0], center[1]) < r * 0.98) return true;
+                }
+                return false;
+            }
+
+            // 2. Güvenli Teğet Giriş Noktası (Far Pole için varsayılan hedef)
+            const distToFar = calculateDistance(start[0], start[1], p_far[0], p_far[1]);
+            const bearingToFar = getBearing(start[0], start[1], p_far[0], p_far[1]);
+            const alpha = toDeg(Math.acos(Math.min(1, R / distToFar)));
+            const t_far1 = getDestination(p_far[0], p_far[1], R, (bearingToFar + 180 + alpha) % 360);
+            const t_far2 = getDestination(p_far[0], p_far[1], R, (bearingToFar + 180 - alpha) % 360);
+            let T = calculateDistance(t_far1[0], t_far1[1], p_close[0], p_close[1]) > calculateDistance(t_far2[0], t_far2[1], p_close[0], p_close[1]) ? t_far1 : t_far2;
+
+            const path = [];
+            let isBlocked = false;
+            let entryT_pt, exitT_near_pt;
+            
+            // 3. Yakın Direk Güvenlik Kontrolü ve Bypass
+            if (lineIntersectsCircle(start, T, p_close, R)) {
+                isBlocked = true;
+                // ŞARTNAME: En yakın nokta (Nearest point on circle)
+                const bearingToCloseFromStart = getBearing(p_close[0], p_close[1], start[0], start[1]);
+                entryT_pt = getDestination(p_close[0], p_close[1], R, bearingToCloseFromStart);
+                path.push(entryT_pt);
+
+                // Top/Bottom çıkış noktaları
+                const sideAngle = 90;
+                const exitPointNear1 = getDestination(p_close[0], p_close[1], R, (anglePoles + sideAngle) % 360);
+                const exitPointNear2 = getDestination(p_close[0], p_close[1], R, (anglePoles - sideAngle) % 360);
+                
+                // Far pole girişine en yakın çıkışı seç
+                exitT_near_pt = calculateDistance(exitPointNear1[0], exitPointNear1[1], T[0], T[1]) < calculateDistance(exitPointNear2[0], exitPointNear2[1], T[0], T[1]) ? exitPointNear1 : exitPointNear2;
+                
+                // Arc to exit
+                const bStart = getBearing(p_close[0], p_close[1], entryT_pt[0], entryT_pt[1]);
+                const bEnd = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
+                const diffArc = (bEnd - bStart + 360) % 360;
+                const dirArc = diffArc > 180 ? -1 : 1;
+                path.push(...generateArc(p_close, R, bStart, bEnd, dirArc, Math.ceil(numSteps/4)));
+                
+                // Parallel to far pole
+                const exitBearing = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
+                const exitT_far = getDestination(p_far[0], p_far[1], R, exitBearing);
+                path.push(exitT_far);
+                
+                T = exitT_far; // Lemniscate başlangıcı bu yeni nokta olacak
+            } else {
+                path.push(T);
+            }
+
+            // 4. Lemniscate Parametreleri
+            const a = D / 2 + R; 
+            const bearingT_m = getBearing(midpoint[0], midpoint[1], T[0], T[1]);
+            const relB = (bearingT_m - anglePoles + 360) % 360;
+            const t0 = (relB > 180 ? (relB - 360) : relB) * (Math.PI / 180);
+
+            // ROTASYON YÖNÜ: "Dışarıya doğru" (tip noktasına doğru hareket)
+            // t0 > 0 (üst) ise t azalmalı, t0 < 0 (alt) ise t artmalı
+            const direction = t0 > 0 ? -1 : 1;
+
+            function getLemniscatePoint(t) {
+                const sin_t = Math.sin(t);
+                const cos_t = Math.cos(t);
+                const denom = 1 + sin_t * sin_t;
+                const x = (a * cos_t) / denom;
+                const y = (a * sin_t * cos_t) / denom;
+                const localDist = Math.sqrt(x * x + y * y);
+                const localAngle = toDeg(Math.atan2(y, x));
+                return ensureSafety(getDestination(midpoint[0], midpoint[1], localDist, (anglePoles + localAngle) % 360));
+            }
+
+            // 2 Tam Tur
+            for (let i = 1; i <= numSteps * 2; i++) {
+                const t = t0 + direction * (i / numSteps) * 2 * Math.PI;
+                path.push(getLemniscatePoint(t));
+            }
+
+            // GÜVENLİ DÖNÜŞ (RTL Bypass)
+            if (isBlocked) {
+                path.push(exitT_near_pt); // Uzak direkten yakın direğe düz paralel dönüş
+                const bRetStart = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
+                const bRetEnd = getBearing(p_close[0], p_close[1], entryT_pt[0], entryT_pt[1]);
+                const diffRetArc = (bRetEnd - bRetStart + 360) % 360;
+                const dirRetArc = diffRetArc > 180 ? -1 : 1;
+                path.push(...generateArc(p_close, R, bRetStart, bRetEnd, dirRetArc, Math.ceil(numSteps/4)));
+            }
+
+            path.push(start); // RTL
+            return path;
+        }
+
+        // B. YENİ ŞARTNAME: O-RING (STADIUM/CAPSULE) ROTA VE TEĞET GİRİŞİ
+        function calculateAdvancedOvalPath(poles_coors, startPoint, steps, clearanceRadius) {
+            const [p1, p2] = poles_coors.map(c => [Number(c[0]), Number(c[1])]);
+            const start = [Number(startPoint[0]), Number(startPoint[1])];
+            const R = Number(clearanceRadius);
+            const numSteps = Number(steps);
+
+            const dist1 = calculateDistance(start[0], start[1], p1[0], p1[1]);
+            const dist2 = calculateDistance(start[0], start[1], p2[0], p2[1]);
+            const [p_close, p_far] = dist1 < dist2 ? [p1, p2] : [p2, p1];
+
+            const anglePoles = getBearing(p_close[0], p_close[1], p_far[0], p_far[1]);
+
+            // 1. Dış Teğet Giriş Noktası (Safe Tangent Entry)
+            const distCenter = calculateDistance(start[0], start[1], p_far[0], p_far[1]);
+            const bearingToCenter = getBearing(start[0], start[1], p_far[0], p_far[1]);
+            const angleSpread = toDeg(Math.acos(Math.min(1, R / distCenter)));
+            const t1 = getDestination(p_far[0], p_far[1], R, (bearingToCenter + 180 + angleSpread) % 360);
+            const t2 = getDestination(p_far[0], p_far[1], R, (bearingToCenter + 180 - angleSpread) % 360);
+            // Diğer direğe en uzak olan teğeti seç (Dış teğet)
+            const T = calculateDistance(t1[0], t1[1], p_close[0], p_close[1]) > calculateDistance(t2[0], t2[1], p_close[0], p_close[1]) ? t1 : t2;
+
+            const path = [];
+            path.push(T);
+
+            const arcSteps = Math.ceil(numSteps / 4);
+            const bearingT = getBearing(p_far[0], p_far[1], T[0], T[1]);
+            // Giriş yönünü (CW/CCW) teğet noktasına göre belirle
+            const diff = (bearingT - anglePoles + 360) % 360;
+            const direction = (diff < 180) ? 1 : -1;
+
+            for (let lap = 0; lap < 2; lap++) {
+                // Uzak direk kavisi (Yan tarafa kadar)
+                const sidePointFar = (anglePoles + direction * 90) % 360;
+                let startArc = (lap === 0) ? bearingT : (anglePoles - direction * 90) % 360;
+                path.push(...generateArc(p_far, R, startArc, sidePointFar, direction, arcSteps));
+
+                // Yakın direğe düz uçuş (Stadium side line)
+                path.push(getDestination(p_close[0], p_close[1], R, sidePointFar));
+
+                // Yakın direk etrafında yarım daire kavis (180 derece)
+                const otherSidePointClose = (anglePoles - direction * 90) % 360;
+                path.push(...generateArc(p_close, R, sidePointFar, otherSidePointClose, direction, arcSteps * 2));
+
+                // Uzak direğe düz uçuş (Stadium side line)
+                const otherSidePointFar = (anglePoles - direction * 90) % 360;
+                path.push(getDestination(p_far[0], p_far[1], R, otherSidePointFar));
+                
+                // Lap tamamlamak için başladığımız teğet açısına geri dön
+                if (lap === 1) {
+                    path.push(...generateArc(p_far, R, otherSidePointFar, bearingT, direction, arcSteps));
+                }
+            }
+
+            path.push(start); // RTL
+            return path;
+        }
+
+        // --- 4. BUTON TETİKLEYİCİLERİ ---
+        function executePathLogic(calculatorFunction) {
+            clearPathCoordinates();
+            const lat1 = document.getElementById('pole_lat1').value;
+            const lng1 = document.getElementById('pole_lng1').value;
+            const lat2 = document.getElementById('pole_lat2').value;
+            const lng2 = document.getElementById('pole_lng2').value;
+            const drone_lat = document.getElementById('border_lat1').value;
+            const drone_lng = document.getElementById('border_lng1').value;
+            const steps = document.getElementById('dot_count').value;
+            const clearance = document.getElementById('pole_dist').value; 
+            
+            drone_current_location = [parseFloat(drone_lat), parseFloat(drone_lng)];
+            var poles = [[lat1, lng1], [lat2, lng2]];
+            
+            rote_coors = calculatorFunction(poles, drone_current_location, steps, clearance);
+            
+            if(rote_coors.length > 0) {
+                addPathCoordinate(false, rote_coors[0], 0);
+                for(var i = 1; i < rote_coors.length; i++) { 
+                    addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0); 
+                }
+            }
+        }
+
+        function drawInfinity() { executePathLogic(calculateAdvancedInfinityPath); }
+        function drawCirclePath() { executePathLogic(calculateAdvancedOvalPath); }
+
+        function downloadMissionCoors() {
+            if(!rote_coors || rote_coors.length === 0) { alert("Lütfen önce bir rota çizin!"); return; }
+            
+            const flightAlt = parseFloat(document.getElementById('flight_alt').value).toFixed(6);
+
+            // Güvenlik Filtresi: 10cm'den yakın kopya noktaları siler (Ardupilot/PX4 hatasını önler)
+            let clean_coors = [];
+            for(let i = 0; i < rote_coors.length; i++) {
+                if(i === 0) {
+                    clean_coors.push(rote_coors[i]);
+                } else {
+                    let prev = clean_coors[clean_coors.length-1];
+                    if(calculateDistance(prev[0], prev[1], rote_coors[i][0], rote_coors[i][1]) > 0.1) { 
+                        clean_coors.push(rote_coors[i]);
+                    }
+                }
+            }
+
+            let content = "QGC WPL 110\n";
+            
+            // 0: HOME
+            content += `0\t1\t0\t16\t0\t0\t0\t0\t${drone_current_location[0].toFixed(7)}\t${drone_current_location[1].toFixed(7)}\t100.720000\t1\n`;
+            
+            // 1: TAKEOFF (Kullanıcının girdiği irtifada)
+            content += `1\t0\t3\t22\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${flightAlt}\t1\n`;
+            
+            // 2+: WAYPOINTS (Kullanıcının girdiği irtifada)
+            for (let i = 0; i < clean_coors.length; i++) {
+                content += `${i+2}\t0\t3\t16\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${clean_coors[i][0].toFixed(7)}\t${clean_coors[i][1].toFixed(7)}\t${flightAlt}\t1\n`;
+            }
+            
+            // SON: RTL (Return to Launch - İrtifa korumalı)
+            content += `${clean_coors.length+2}\t0\t3\t20\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${flightAlt}\t1`;
+            
+            // Dosya İndirme Tetikleyicisi
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'ENGRARE_Teknofest_Gorev.waypoints';
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        }
+    </script>
 </body>
-
 </html>

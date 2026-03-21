@@ -122,6 +122,24 @@
         /* --- ALT BİLGİ --- */
         .footer { text-align: center; padding: 15px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--glass-border); margin-top: auto;}
 
+        .waypoint-number-icon {
+            background-color: rgba(10, 15, 26, 0.7);
+            border: 1px solid var(--primary-glow);
+            color: var(--text-main);
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            line-height: 22px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #map_outer_div.waypoint-numbers-hidden .waypoint-number-icon {
+            display: none;
+        }
+
+        .btn.active { background: rgba(59,130,246,0.3); border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+        .btn.active i { color: #fff; }
+
         @media (max-width: 1024px) {
             .dashboard-grid { grid-template-columns: 1fr; height: auto; }
             .map-panel { height: 400px; }
@@ -135,12 +153,11 @@
 
     <nav class="navbar">
         <div class="nav-links">
-            <a class="nav-item active" data-target="page-1">Kontrol Anasayfası</a>
+            <a class="nav-item active" data-target="page-1">Rota Hesaplayıcı</a>
             <a class="nav-item" data-target="page-2">Cihazım</a>
             <a>Görev Girdisi</a>
             <a href="https://dronox.engrare.com/batcalc/">Batarya Hesaplayıcı</a>
             <a>Ayarlar</a>
-            <a>Kodu Güncelle</a>
         </div>
         <a class="nav-brand">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -166,10 +183,10 @@
                     <div>
                         <div class="section-title"><i class="fa-solid fa-tower-cell"></i> Direk Koordinatları</div>
                         <div class="input-row">
-                            <input type="number" id="pole_lat1" placeholder="1. Direk Enlem" value="40.9607905" step="any">
-                            <input type="number" id="pole_lng1" placeholder="1. Direk Boylam" value="29.1335345" step="any">
-                            <input type="number" id="pole_lat2" placeholder="2. Direk Enlem" value="40.9608368" step="any">
-                            <input type="number" id="pole_lng2" placeholder="2. Direk Boylam" value="29.1333794" step="any">
+                            <input type="number" id="pole_lat1" placeholder="1. Direk Enlem" value="40.9607905" step="0.0001">
+                            <input type="number" id="pole_lng1" placeholder="1. Direk Boylam" value="29.1335345"  step="0.0001">
+                            <input type="number" id="pole_lat2" placeholder="2. Direk Enlem" value="40.9608368" step="0.0001">
+                            <input type="number" id="pole_lng2" placeholder="2. Direk Boylam" value="29.1333794" step="0.0001">
                         </div>
                     </div>
 
@@ -178,14 +195,14 @@
                     <div>
                         <div class="section-title"><i class="fa-solid fa-location-crosshairs"></i> Görev Parametreleri</div>
                         <div class="input-row" style="margin-bottom: 10px;">
-                            <input type="number" id="border_lat1" placeholder="Drone Başlangıç Enlem" value="40.9607865" step="any">
-                            <input type="number" id="border_lng1" placeholder="Drone Başlangıç Boylam" value="29.1336407" step="any">
+                            <input type="number" id="border_lat1" placeholder="Drone Başlangıç Enlem" value="40.9607865" step="0.0001">
+                            <input type="number" id="border_lng1" placeholder="Drone Başlangıç Boylam" value="29.1336407" step="0.0001">
                         </div>
                         
                         <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr;">
                             <div class="input-group">
                                 <label style="font-size:0.75rem; color:var(--text-muted); margin-left:5px;">Nokta Sayısı</label>
-                                <input type="number" id="dot_count" value="40" step="any" title="Dönüş pürüzsüzlüğü">
+                                <input type="number" id="dot_count" value="20" step="any" title="Dönüş pürüzsüzlüğü">
                             </div>
                             <div class="input-group">
                                 <label style="font-size:0.75rem; color:var(--warning); margin-left:5px; font-weight:bold;">Direğe Yaklaşma (m)</label>
@@ -193,12 +210,16 @@
                             </div>
                             <div class="input-group">
                                 <label style="font-size:0.75rem; color:var(--success); margin-left:5px; font-weight:bold;">Uçuş İrtifası (m)</label>
-                                <input type="number" id="flight_alt" value="10" step="0.5" title="Görev uçuş yüksekliği">
+                                <input type="number" id="flight_alt" value="4" step="0.5" title="Görev uçuş yüksekliği">
                             </div>
                         </div>
                     </div>
 
                     <div class="action-grid">
+                        <button class="btn active" id="toggle-waypoint-numbers">
+                            <i class="fa-solid fa-list-ol"></i>
+                            <span>Waypoint No</span>
+                        </button>
                         <button class="btn" onclick="drawInfinity()">
                             <i class="fa-solid fa-infinity"></i>
                             <span>Sonsuz Çiz (2 Tur)</span>
@@ -207,9 +228,9 @@
                             <i class="fa-regular fa-circle-half-stroke"></i>
                             <span>O-Ring Rota (2 Tur)</span>
                         </button>
-                        <button class="btn" onclick="enterCoordinate()">
-                            <i class="fa-solid fa-location-pen"></i>
-                            <span>Koordinat Ekle</span>
+                        <button class="btn" onclick="saveCoordinatesToCookies()">
+                            <i class="fa-solid fa-save"></i>
+                            <span>Koordinatları Kaydet</span>
                         </button>
                         <button class="btn" onclick="downloadMissionCoors()">
                             <i class="fa-solid fa-download"></i>
@@ -257,7 +278,12 @@
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                navItems.forEach(nav => nav.classList.remove('active'));
+                // Don't switch pages if it's a toggle button
+                if (item.id === 'toggle-waypoint-numbers') return;
+
+                navItems.forEach(nav => {
+                    if (nav.getAttribute('data-target')) nav.classList.remove('active');
+                });
                 item.classList.add('active');
                 const targetId = item.getAttribute('data-target');
                 pages.forEach(page => page.classList.remove('active'));
@@ -271,11 +297,11 @@
         let drone_current_location = [40.9609065, 29.1334407];
         let pathElements = [];
         let poleElements = [];
+        let waypointNumberElements = [];
         let rote_coors = [];
 
         map_outer_div = L.map('map_outer_div').setView(drone_current_location, 19);
         
-        // Esri yerine yüksek çözünürlüklü Google Uydu Haritası eklendi
         L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
             maxZoom: 22,
             attribution: '&copy; Google Maps - ENGRARE®'
@@ -299,13 +325,24 @@
             poleElements.push(poleMarker);
         }
 
-        function addPathCoordinate(old_coordinate, coordinate, line_type) {
+        function addPathCoordinate(old_coordinate, coordinate, line_type, waypoint_number) {
             if (old_coordinate) {
                 const line = L.polyline([old_coordinate, coordinate], line_type_json[line_type].line).addTo(map_outer_div);
                 pathElements.push(line);
             }
             const pathMarker = L.circleMarker(coordinate, line_type_json[line_type].marker).addTo(map_outer_div);
             pathElements.push(pathMarker);
+
+            if (waypoint_number) {
+                const numberIcon = L.divIcon({
+                    className: 'waypoint-number-icon',
+                    html: `<b>${waypoint_number}</b>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                const numberMarker = L.marker(coordinate, { icon: numberIcon }).addTo(map_outer_div);
+                waypointNumberElements.push(numberMarker);
+            }
         }
 
         function clearPoleCoordinates() {
@@ -316,12 +353,8 @@
         function clearPathCoordinates() {
             pathElements.forEach(element => map_outer_div.removeLayer(element));
             pathElements = [];
-        }
-
-        function updateDroneLocation(coors) {
-            drone_current_location = coors;
-            droneMarker.setLatLng(coors);
-            map_outer_div.panTo(coors);
+            waypointNumberElements.forEach(element => map_outer_div.removeLayer(element));
+            waypointNumberElements = [];
         }
 
         function enterCoordinate() {
@@ -340,6 +373,78 @@
             addPoleCoordinate([p_lat1, p_lng1]);
             addPoleCoordinate([p_lat2, p_lng2]);
         }
+
+        function saveCoordinatesToCookies() {
+            setCookie("pole_lat1", document.getElementById('pole_lat1').value, 365);
+            setCookie("pole_lng1", document.getElementById('pole_lng1').value, 365);
+            setCookie("pole_lat2", document.getElementById('pole_lat2').value, 365);
+            setCookie("pole_lng2", document.getElementById('pole_lng2').value, 365);
+            setCookie("border_lat1", document.getElementById('border_lat1').value, 365);
+            setCookie("border_lng1", document.getElementById('border_lng1').value, 365);
+            alert("Koordinatlar kaydedildi!");
+        }
+
+        function loadCoordinatesFromCookies() {
+            const pole_lat1 = getCookie("pole_lat1");
+            if (pole_lat1 != "") document.getElementById('pole_lat1').value = pole_lat1;
+            const pole_lng1 = getCookie("pole_lng1");
+            if (pole_lng1 != "") document.getElementById('pole_lng1').value = pole_lng1;
+            const pole_lat2 = getCookie("pole_lat2");
+            if (pole_lat2 != "") document.getElementById('pole_lat2').value = pole_lat2;
+            const pole_lng2 = getCookie("pole_lng2");
+            if (pole_lng2 != "") document.getElementById('pole_lng2').value = pole_lng2;
+            const border_lat1 = getCookie("border_lat1");
+            if (border_lat1 != "") document.getElementById('border_lat1').value = border_lat1;
+            const border_lng1 = getCookie("border_lng1");
+            if (border_lng1 != "") document.getElementById('border_lng1').value = border_lng1;
+        }
+
+        function setCookie(cname, cvalue, exdays) {
+            const d = new Date();
+            d.setTime(d.getTime() + (exdays*24*60*60*1000));
+            let expires = "expires="+ d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            let name = cname + "=";
+            let decodedCookie = decodeURIComponent(document.cookie);
+            let ca = decodedCookie.split(';');
+            for(let i = 0; i <ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+
+        document.getElementById('pole_lat1').addEventListener('input', enterCoordinate);
+        document.getElementById('pole_lng1').addEventListener('input', enterCoordinate);
+        document.getElementById('pole_lat2').addEventListener('input', enterCoordinate);
+        document.getElementById('pole_lng2').addEventListener('input', enterCoordinate);
+        document.getElementById('border_lat1').addEventListener('input', enterCoordinate);
+        document.getElementById('border_lng1').addEventListener('input', enterCoordinate);
+
+        window.onload = function() {
+            loadCoordinatesFromCookies();
+            enterCoordinate();
+        };
+
+        const toggleBtn = document.getElementById('toggle-waypoint-numbers');
+        toggleBtn.addEventListener('click', () => {
+            const mapContainer = document.getElementById('map_outer_div');
+            if (mapContainer.classList.contains('waypoint-numbers-hidden')) {
+                mapContainer.classList.remove('waypoint-numbers-hidden');
+                toggleBtn.classList.add('active');
+            } else {
+                mapContainer.classList.add('waypoint-numbers-hidden');
+                toggleBtn.classList.remove('active');
+            }
+        });
 
         // --- 3. JEODEZİK MATEMATİK VE OTONOM ROTA ALGORİTMALARI ---
         const R_EARTH = 6371000;
@@ -368,7 +473,6 @@
             return [toDeg(lat2), toDeg(lon2)];
         }
 
-        // Kavis Çizme Aracı (Arc Generator)
         function generateArc(center, radius, startBearing, endBearing, direction, arcSteps) {
             let pts = [];
             let diff = (endBearing - startBearing) % 360;
@@ -387,23 +491,18 @@
             return pts;
         }
 
-        // A. YENİ ŞARTNAME: LEMNISCATE OF BERNOULLI (SONSUZLUK) VE GÜVENLİ GİRİŞ
         function calculateAdvancedInfinityPath(poles_coors, startPoint, steps, clearanceRadius) {
             const [p1, p2] = poles_coors.map(c => [Number(c[0]), Number(c[1])]);
             const start = [Number(startPoint[0]), Number(startPoint[1])];
             const R = Number(clearanceRadius);
             const numSteps = Number(steps);
-
-            // 1. En uzak direği tespit et (Giriş direği)
             const dist1 = calculateDistance(start[0], start[1], p1[0], p1[1]);
             const dist2 = calculateDistance(start[0], start[1], p2[0], p2[1]);
             const [p_close, p_far] = dist1 < dist2 ? [p1, p2] : [p2, p1];
-
             const D = calculateDistance(p_close[0], p_close[1], p_far[0], p_far[1]);
             const midpoint = [(p_close[0] + p_far[0]) / 2, (p_close[1] + p_far[1]) / 2];
             const anglePoles = getBearing(midpoint[0], midpoint[1], p_far[0], p_far[1]);
 
-            // Güvenlik Yardımcıları
             function ensureSafety(pt) {
                 let dClose = calculateDistance(pt[0], pt[1], p_close[0], p_close[1]);
                 let dFar = calculateDistance(pt[0], pt[1], p_far[0], p_far[1]);
@@ -422,7 +521,6 @@
                 return false;
             }
 
-            // 2. Güvenli Teğet Giriş Noktası (Far Pole için varsayılan hedef)
             const distToFar = calculateDistance(start[0], start[1], p_far[0], p_far[1]);
             const bearingToFar = getBearing(start[0], start[1], p_far[0], p_far[1]);
             const alpha = toDeg(Math.acos(Math.min(1, R / distToFar)));
@@ -431,50 +529,31 @@
             let T = calculateDistance(t_far1[0], t_far1[1], p_close[0], p_close[1]) > calculateDistance(t_far2[0], t_far2[1], p_close[0], p_close[1]) ? t_far1 : t_far2;
 
             const path = [];
-            let isBlocked = false;
-            let entryT_pt, exitT_near_pt;
-            
-            // 3. Yakın Direk Güvenlik Kontrolü ve Bypass
             if (lineIntersectsCircle(start, T, p_close, R)) {
-                isBlocked = true;
-                // ŞARTNAME: En yakın nokta (Nearest point on circle)
                 const bearingToCloseFromStart = getBearing(p_close[0], p_close[1], start[0], start[1]);
-                entryT_pt = getDestination(p_close[0], p_close[1], R, bearingToCloseFromStart);
+                const entryT_pt = getDestination(p_close[0], p_close[1], R, bearingToCloseFromStart);
                 path.push(entryT_pt);
-
-                // Top/Bottom çıkış noktaları
                 const sideAngle = 90;
                 const exitPointNear1 = getDestination(p_close[0], p_close[1], R, (anglePoles + sideAngle) % 360);
                 const exitPointNear2 = getDestination(p_close[0], p_close[1], R, (anglePoles - sideAngle) % 360);
-                
-                // Far pole girişine en yakın çıkışı seç
-                exitT_near_pt = calculateDistance(exitPointNear1[0], exitPointNear1[1], T[0], T[1]) < calculateDistance(exitPointNear2[0], exitPointNear2[1], T[0], T[1]) ? exitPointNear1 : exitPointNear2;
-                
-                // Arc to exit
+                const exitT_near_pt = calculateDistance(exitPointNear1[0], exitPointNear1[1], T[0], T[1]) < calculateDistance(exitPointNear2[0], exitPointNear2[1], T[0], T[1]) ? exitPointNear1 : exitPointNear2;
                 const bStart = getBearing(p_close[0], p_close[1], entryT_pt[0], entryT_pt[1]);
                 const bEnd = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
                 const diffArc = (bEnd - bStart + 360) % 360;
                 const dirArc = diffArc > 180 ? -1 : 1;
                 path.push(...generateArc(p_close, R, bStart, bEnd, dirArc, Math.ceil(numSteps/4)));
-                
-                // Parallel to far pole
                 const exitBearing = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
                 const exitT_far = getDestination(p_far[0], p_far[1], R, exitBearing);
                 path.push(exitT_far);
-                
-                T = exitT_far; // Lemniscate başlangıcı bu yeni nokta olacak
+                T = exitT_far;
             } else {
                 path.push(T);
             }
 
-            // 4. Lemniscate Parametreleri
             const a = D / 2 + R; 
             const bearingT_m = getBearing(midpoint[0], midpoint[1], T[0], T[1]);
             const relB = (bearingT_m - anglePoles + 360) % 360;
             const t0 = (relB > 180 ? (relB - 360) : relB) * (Math.PI / 180);
-
-            // ROTASYON YÖNÜ: "Dışarıya doğru" (tip noktasına doğru hareket)
-            // t0 > 0 (üst) ise t azalmalı, t0 < 0 (alt) ise t artmalı
             const direction = t0 > 0 ? -1 : 1;
 
             function getLemniscatePoint(t) {
@@ -488,27 +567,24 @@
                 return ensureSafety(getDestination(midpoint[0], midpoint[1], localDist, (anglePoles + localAngle) % 360));
             }
 
-            // 2 Tam Tur
             for (let i = 1; i <= numSteps * 2; i++) {
                 const t = t0 + direction * (i / numSteps) * 2 * Math.PI;
                 path.push(getLemniscatePoint(t));
             }
 
-            // GÜVENLİ DÖNÜŞ (RTL Bypass)
-            if (isBlocked) {
-                path.push(exitT_near_pt); // Uzak direkten yakın direğe düz paralel dönüş
-                const bRetStart = getBearing(p_close[0], p_close[1], exitT_near_pt[0], exitT_near_pt[1]);
-                const bRetEnd = getBearing(p_close[0], p_close[1], entryT_pt[0], entryT_pt[1]);
-                const diffRetArc = (bRetEnd - bRetStart + 360) % 360;
-                const dirRetArc = diffRetArc > 180 ? -1 : 1;
-                path.push(...generateArc(p_close, R, bRetStart, bRetEnd, dirRetArc, Math.ceil(numSteps/4)));
+            for (let i = numSteps * 2 + 1; i < numSteps * 4; i++) {
+                const t = t0 + direction * (i / numSteps) * 2 * Math.PI;
+                const next_pt = getLemniscatePoint(t);
+                path.push(next_pt);
+                if (calculateDistance(next_pt[0], next_pt[1], p_close[0], p_close[1]) <= R) {
+                    break;
+                }
             }
-
-            path.push(start); // RTL
+            
+            path.push(start);
             return path;
         }
 
-        // B. YENİ ŞARTNAME: O-RING (STADIUM/CAPSULE) ROTA VE TEĞET GİRİŞİ
         function calculateAdvancedOvalPath(poles_coors, startPoint, steps, clearanceRadius) {
             const [p1, p2] = poles_coors.map(c => [Number(c[0]), Number(c[1])]);
             const start = [Number(startPoint[0]), Number(startPoint[1])];
@@ -520,53 +596,48 @@
             const [p_close, p_far] = dist1 < dist2 ? [p1, p2] : [p2, p1];
 
             const anglePoles = getBearing(p_close[0], p_close[1], p_far[0], p_far[1]);
+            const bToClose = getBearing(p_close[0], p_close[1], start[0], start[1]);
+            
+            // Determine initial direction (CW or CCW) based on entry
+            const side1 = (anglePoles + 90) % 360;
+            const side2 = (anglePoles - 90) % 360;
+            const direction = Math.abs((bToClose - side1 + 540) % 360 - 180) < Math.abs((bToClose - side2 + 540) % 360 - 180) ? 1 : -1;
 
-            // 1. Dış Teğet Giriş Noktası (Safe Tangent Entry)
-            const distCenter = calculateDistance(start[0], start[1], p_far[0], p_far[1]);
-            const bearingToCenter = getBearing(start[0], start[1], p_far[0], p_far[1]);
-            const angleSpread = toDeg(Math.acos(Math.min(1, R / distCenter)));
-            const t1 = getDestination(p_far[0], p_far[1], R, (bearingToCenter + 180 + angleSpread) % 360);
-            const t2 = getDestination(p_far[0], p_far[1], R, (bearingToCenter + 180 - angleSpread) % 360);
-            // Diğer direğe en uzak olan teğeti seç (Dış teğet)
-            const T = calculateDistance(t1[0], t1[1], p_close[0], p_close[1]) > calculateDistance(t2[0], t2[1], p_close[0], p_close[1]) ? t1 : t2;
-
-            const path = [];
-            path.push(T);
-
-            const arcSteps = Math.ceil(numSteps / 4);
-            const bearingT = getBearing(p_far[0], p_far[1], T[0], T[1]);
-            // Giriş yönünü (CW/CCW) teğet noktasına göre belirle
-            const diff = (bearingT - anglePoles + 360) % 360;
-            const direction = (diff < 180) ? 1 : -1;
+            const dToClose = calculateDistance(start[0], start[1], p_close[0], p_close[1]);
+            const alpha = toDeg(Math.acos(Math.min(1, R / dToClose)));
+            const entryPoint = getDestination(p_close[0], p_close[1], R, (bToClose + direction * alpha) % 360);
+            
+            const path = [entryPoint];
+            const arcSteps = Math.ceil(numSteps / 2);
 
             for (let lap = 0; lap < 2; lap++) {
-                // Uzak direk kavisi (Yan tarafa kadar)
-                const sidePointFar = (anglePoles + direction * 90) % 360;
-                let startArc = (lap === 0) ? bearingT : (anglePoles - direction * 90) % 360;
-                path.push(...generateArc(p_far, R, startArc, sidePointFar, direction, arcSteps));
+                let currentB = getBearing(p_close[0], p_close[1], path[path.length-1][0], path[path.length-1][1]);
+                let s1_close = (anglePoles + direction * 90) % 360;
+                let s2_close = (anglePoles - direction * 90) % 360;
+                let s1_far = (anglePoles + direction * 90) % 360;
+                let s2_far = (anglePoles - direction * 90) % 360;
 
-                // Yakın direğe düz uçuş (Stadium side line)
-                path.push(getDestination(p_close[0], p_close[1], R, sidePointFar));
+                // 1. Arc to the crossing start point on p_close
+                path.push(...generateArc(p_close, R, currentB, s1_close, direction, Math.ceil(arcSteps/4)));
 
-                // Yakın direk etrafında yarım daire kavis (180 derece)
-                const otherSidePointClose = (anglePoles - direction * 90) % 360;
-                path.push(...generateArc(p_close, R, sidePointFar, otherSidePointClose, direction, arcSteps * 2));
+                // 2. CROSS: Side 1 (p_close) -> Side 2 (p_far)
+                path.push(getDestination(p_far[0], p_far[1], R, s2_far));
 
-                // Uzak direğe düz uçuş (Stadium side line)
-                const otherSidePointFar = (anglePoles - direction * 90) % 360;
-                path.push(getDestination(p_far[0], p_far[1], R, otherSidePointFar));
-                
-                // Lap tamamlamak için başladığımız teğet açısına geri dön
-                if (lap === 1) {
-                    path.push(...generateArc(p_far, R, otherSidePointFar, bearingT, direction, arcSteps));
-                }
+                // 3. OUTER ARC around p_far: Side 2 -> Side 1
+                path.push(...generateArc(p_far, R, s2_far, s1_far, direction, arcSteps));
+
+                // 4. CROSS: Side 1 (p_far) -> Side 2 (p_close)
+                path.push(getDestination(p_close[0], p_close[1], R, s2_close));
+
+                // 5. OUTER ARC around p_close: Side 2 -> Side 1
+                // Note: To stay outer, the rotation direction must be reversed for the second pole
+                path.push(...generateArc(p_close, R, s2_close, s1_close, -direction, arcSteps));
             }
 
-            path.push(start); // RTL
+            path.push(start);
             return path;
         }
 
-        // --- 4. BUTON TETİKLEYİCİLERİ ---
         function executePathLogic(calculatorFunction) {
             clearPathCoordinates();
             const lat1 = document.getElementById('pole_lat1').value;
@@ -584,9 +655,8 @@
             rote_coors = calculatorFunction(poles, drone_current_location, steps, clearance);
             
             if(rote_coors.length > 0) {
-                addPathCoordinate(false, rote_coors[0], 0);
-                for(var i = 1; i < rote_coors.length; i++) { 
-                    addPathCoordinate(rote_coors[i - 1], rote_coors[i], 0); 
+                for(var i = 0; i < rote_coors.length; i++) { 
+                    addPathCoordinate(i > 0 ? rote_coors[i - 1] : false, rote_coors[i], 0, i + 1); 
                 }
             }
         }
@@ -599,12 +669,10 @@
             
             const flightAlt = parseFloat(document.getElementById('flight_alt').value).toFixed(6);
 
-            // Güvenlik Filtresi: 10cm'den yakın kopya noktaları siler (Ardupilot/PX4 hatasını önler)
             let clean_coors = [];
-            for(let i = 0; i < rote_coors.length; i++) {
-                if(i === 0) {
-                    clean_coors.push(rote_coors[i]);
-                } else {
+            if(rote_coors.length > 0) {
+                clean_coors.push(rote_coors[0]);
+                for(let i = 1; i < rote_coors.length; i++) {
                     let prev = clean_coors[clean_coors.length-1];
                     if(calculateDistance(prev[0], prev[1], rote_coors[i][0], rote_coors[i][1]) > 0.1) { 
                         clean_coors.push(rote_coors[i]);
@@ -613,22 +681,15 @@
             }
 
             let content = "QGC WPL 110\n";
-            
-            // 0: HOME
             content += `0\t1\t0\t16\t0\t0\t0\t0\t${drone_current_location[0].toFixed(7)}\t${drone_current_location[1].toFixed(7)}\t100.720000\t1\n`;
-            
-            // 1: TAKEOFF (Kullanıcının girdiği irtifada)
             content += `1\t0\t3\t22\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${flightAlt}\t1\n`;
             
-            // 2+: WAYPOINTS (Kullanıcının girdiği irtifada)
             for (let i = 0; i < clean_coors.length; i++) {
                 content += `${i+2}\t0\t3\t16\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${clean_coors[i][0].toFixed(7)}\t${clean_coors[i][1].toFixed(7)}\t${flightAlt}\t1\n`;
             }
             
-            // SON: RTL (Return to Launch - İrtifa korumalı)
             content += `${clean_coors.length+2}\t0\t3\t20\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t0.00000000\t${flightAlt}\t1`;
             
-            // Dosya İndirme Tetikleyicisi
             const blob = new Blob([content], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -637,5 +698,3 @@
             setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
         }
     </script>
-</body>
-</html>

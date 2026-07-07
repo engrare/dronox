@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favori Sitelerim</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Genel Alan ve Arka Plan */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            overflow-x: hidden;
+            padding: 40px 20px;
+        }
+
+        /* Arka plandaki estetik parıltı çemberleri */
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%);
+            backdrop-filter: blur(80px);
+            z-index: 1;
+        }
+        .circle-1 { width: 400px; height: 400px; top: -10%; left: -10%; }
+        .circle-2 { width: 500px; height: 500px; bottom: -20%; right: -10%; }
+
+        /* Ana Konteyner */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Gelişmiş Arama Çubuğu */
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto 45px auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 25px;
+            font-size: 1rem;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            outline: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Grid Yapısı */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            padding: 10px;
+        }
+
+        /* Cam Efektli Kartlar (Kutular) */
+        .card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            overflow: hidden; /* Puslu arka planın taşmasını önler */
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        /* Kartların Üzerine Gelindiğinde (Hover) */
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 20px 40px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Kart İçindeki Logo Alanı */
+        .logo-wrapper {
+            position: relative;
+            width: 85px;
+            height: 85px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Öndeki Net PNG Logo */
+        .logo-png {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            /* Görsel netliği artıran renk ve gölge filtreleri */
+            filter: drop-shadow(0px 6px 12px rgba(0, 0, 0, 0.35)) brightness(1.05) contrast(1.02); 
+        }
+
+        /* Arkadaki Havalı Puslu Logo (Glow Effect) */
+        .logo-bg {
+            position: absolute;
+            z-index: 2;
+            width: 110%;
+            height: 110%;
+            object-fit: contain;
+            filter: blur(22px) opacity(0.35) brightness(1.2);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), filter 0.4s ease;
+            pointer-events: none;
+        }
+
+        /* Kartın üzerine gelindiğinde logoların tepkisi */
+        .card:hover .logo-png {
+            transform: scale(1.1);
+        }
+        
+        .card:hover .logo-bg {
+            transform: scale(1.25);
+            filter: blur(18px) opacity(0.65) brightness(1.4);
+        }
+
+        /* Site İsimleri */
+        .card span {
+            position: relative;
+            z-index: 3;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        .card:hover span {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+
+    <div class="container">
+        <h1>Giriş Paneli</h1>
+        
+        <div class="search-container">
+            <input type="text" id="searchBar" class="search-input" placeholder="Aranacak kelimeyi girin...">
+        </div>
+        
+        <div class="grid-layout">
+            <a data-base-url="https://www.motorobit.com/arama?q=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://www.motorobit.com/Data/EditorFiles/Logo (5).png" alt="Motorobit" class="logo-bg">
+                    <img src="https://www.motorobit.com/Data/EditorFiles/Logo (5).png" alt="Motorobit" class="logo-png">
+                </div>
+                <span>Motorobit</span>
+            </a>
+
+            <a data-base-url="https://www.robotistan.com/searchandising?q=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://robotistan.witcdn.net/Data/EditorFiles/logo/logo-1.png" alt="Robotistan" class="logo-bg">
+                    <img src="https://robotistan.witcdn.net/Data/EditorFiles/logo/logo-1.png" alt="Robotistan" class="logo-png">
+                </div>
+                <span>Robotistan</span>
+            </a>
+
+            <a data-base-url="https://www.robocombo.com/Arama?1&kelime=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://static.ticimax.cloud/70014/Uploads/HeaderTasarim/Header1/796d7709-60e9-4b90-bb04-4143ed0aba24.jpg" alt="RoboCombo" class="logo-bg">
+                    <img src="https://static.ticimax.cloud/70014/Uploads/HeaderTasarim/Header1/796d7709-60e9-4b90-bb04-4143ed0aba24.jpg" alt="RoboCombo" class="logo-png">
+                </div>
+                <span>RoboCombo</span>
+            </a>
+
+            <a data-base-url="https://www.robotzade.com/" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://www.robotzade.com/idea/cd/40/themes/selftpl_5df8bd2f90381/assets/uploads/logo.png?revision=1780610956" alt="Robotzade" class="logo-bg">
+                    <img src="https://www.robotzade.com/idea/cd/40/themes/selftpl_5df8bd2f90381/assets/uploads/logo.png?revision=1780610956" alt="Robotzade" class="logo-png">
+                </div>
+                <span>Robotzade</span>
+            </a>
+
+            <a data-base-url="https://www.robotsepeti.com/arama?q=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://www.robotsepeti.com/Data/EditorFiles/robotsepeticom-01.png" alt="Robot Sepeti" class="logo-bg">
+                    <img src="https://www.robotsepeti.com/Data/EditorFiles/robotsepeticom-01.png" alt="Robot Sepeti" class="logo-png">
+                </div>
+                <span>Robot Sepeti</span>
+            </a>
+
+            <a data-base-url="https://www.direnc.net/arama?q=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://www.direnc.net/Data/EditorFiles/tsoft-direnc-net-logo.png" alt="Direnç.Net" class="logo-bg">
+                    <img src="https://www.direnc.net/Data/EditorFiles/tsoft-direnc-net-logo.png" alt="Direnç.Net" class="logo-png">
+                </div>
+                <span>Direnç.Net</span>
+            </a>
+
+            <a data-base-url="https://www.f1depo.com/arama/" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://www.f1depo.com/shop/dt/63/themes/selftpl_61079c6b80a7a/assets/images/logo.svg?revision=8.4.3.0-2-1763545195" alt="F1 Depo" class="logo-bg">
+                    <img src="https://www.f1depo.com/shop/dt/63/themes/selftpl_61079c6b80a7a/assets/images/logo.svg?revision=8.4.3.0-2-1763545195" alt="F1 Depo" class="logo-png">
+                </div>
+                <span>F1 Depo</span>
+            </a>
+
+            <a data-base-url="https://market.samm.com/search?s=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://cdn.myikas.com/images/theme-images/4ed70eb4-4a12-4ea0-89e3-be74c9a44906/image_180.webp" alt="Samm Market" class="logo-bg">
+                    <img src="https://cdn.myikas.com/images/theme-images/4ed70eb4-4a12-4ea0-89e3-be74c9a44906/image_180.webp" alt="Samm Market" class="logo-png">
+                </div>
+                <span>Samm Market</span>
+            </a>
+
+            <a data-base-url="https://www.robo90.com/arama?q=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://robo90.com/Data/EditorFiles/tasarim/robo90-logo.svg" alt="Robo 90" class="logo-bg">
+                    <img src="https://robo90.com/Data/EditorFiles/tasarim/robo90-logo.svg" alt="Robo 90" class="logo-png">
+                </div>
+                <span>Robo 90</span>
+            </a>
+
+            <a data-base-url="https://www.robolinkmarket.com/?search_provider=aisearch&query=" target="_blank" class="card">
+                <div class="logo-wrapper">
+                    <img src="https://witcdn.robolinkmarket.com/Data/EditorFiles/robolinklogo.png" alt="Robolink Market" class="logo-bg">
+                    <img src="https://witcdn.robolinkmarket.com/Data/EditorFiles/robolinklogo.png" alt="Robolink Market" class="logo-png">
+                </div>
+                <span>Robolink Market</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault(); // Varsayılan boş tıklamayı durdur
+                
+                const baseUrl = this.getAttribute('data-base-url');
+                const query = document.getElementById('searchBar').value.trim();
+                
+                // Eğer search bar doluysa linkin sonuna ekle, boşsa direkt adrese git
+                const finalUrl = query ? baseUrl + encodeURIComponent(query) : baseUrl;
+                
+                // Sitenin hedef sekmeyi (target="_blank") açmasını sağla
+                window.open(finalUrl, '_blank');
+            });
+        });
+    </script>
+</body>
+</html>

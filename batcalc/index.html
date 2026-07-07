@@ -190,10 +190,12 @@
                 <div class="input-group">
                     <label>Sistem Voltajı (Batarya Hücresi)</label>
                     <select id="cells" onchange="calculatePhysics()">
-                        <option value="4">4S (Nominal: 14.8V)</option>
-                        <option value="6" selected="">6S (Nominal: 22.2V)</option>
-                        <option value="8">8S (Nominal: 29.6V)</option>
-                        <option value="12">12S (Nominal: 44.4V)</option>
+                        <option value="1" style="background:black;">1S (Nominal: 3.7V)</option>
+                        <option value="2" style="background:black;">2S (Nominal: 7.4V)</option>
+                        <option value="3" style="background:black;">3S (Nominal: 11.1V)</option>
+                        <option value="4" style="background:black;">4S (Nominal: 14.8V)</option>
+                        <option value="5" style="background:black;">5S (Nominal: 18.5V)</option>
+                        <option value="6" style="background:black;" selected="">6S (Nominal: 22.2V)</option>
                     </select>
                 </div>
 
@@ -233,7 +235,7 @@
                 <div class="info-card">
                     <div class="speed-limit-box">
                         <span class="speed-limit-label">Teorik Maksimum Hız</span>
-                        <div class="speed-limit-val" id="display-max-speed">0.0 <span>km/h</span><br><span style="font-size:0.8rem; color:var(--text-muted)">0.0 m/s</span></div>
+                        <div class="speed-limit-val" id="display-max-speed">0.0 <span>km/h</span><br><span style="font-size:0.85rem; color:var(--text-muted)">0.0 m/s</span></div>
                     </div>
 
                     <span class="step-badge" style="margin-top: 5px;">Aşama 1: Fiziksel Limit Testi</span>
@@ -525,7 +527,6 @@
             document.getElementById('display-power').innerText = globalPowerW + 'W';
         }
 
-        /* --- INTERPOLASYON MODAL FONKSİYONLARI --- */
         function openInterpolate(target) {
             activeInterpTarget = target;
             let targetThrust = 0;
@@ -553,7 +554,6 @@
                 return;
             }
 
-            // Lineer Interpolasyon Formülü: y = y1 + ((x - x1) * (y2 - y1)) / (x2 - x1)
             let calculatedEff = eff1 + ((targetThrust - g1) * (eff2 - eff1)) / (g2 - g1);
             if(calculatedEff < 0) calculatedEff = 0;
 
@@ -566,7 +566,6 @@
             document.getElementById(id).style.display = 'none';
         }
 
-        /* --- KAYIT & HAFIZA YÖNETİMİ --- */
         function openSaveModal() {
             if(!globalCalculatedMah) {
                 alert("Önce tüm analizlerin tamamlanıp mAh değerinin hesaplanması gerekir.");
@@ -635,7 +634,7 @@
             renderTable();
         }
 
-        /* --- EXCEL FORMATINDA INDIRME (EXCEL LINK UYUMLU CSV) --- */
+        /* --- EXCEL FORMATINDA INDIRME GÜNCELLEMESİ --- */
         function exportToCSV() {
             const records = JSON.parse(localStorage.getItem('engrare_configs') || '[]');
             if(records.length === 0) {
@@ -643,16 +642,16 @@
                 return;
             }
 
-            // UTF-8 BOM ekliyoruz ki Excel Türkçe karakterleri doğru okusun (Semicolon ayraçlı)
             let csvContent = "\uFEFF";
-            csvContent += "Motor Adı;Motor Linki;Adet Fiyatı;Batarya Serisi;Pervane Boyu;Batarya Kapasitesi (mAh);Motor Ağırlığı (g);Toplam Kalkış Ağırlığı;Uçuş/Seyir Hızı;Güç Tüketimi (W);Ortalama Akım\n";
+            // "Motor Linki" başlığı kaldırıldı.
+            csvContent += "Motor Adı;Adet Fiyatı;Batarya Serisi;Pervane Boyu;Batarya Kapasitesi (mAh);Motor Ağırlığı (g);Toplam Kalkış Ağırlığı;Uçuş/Seyir Hızı;Güç Tüketimi (W);Ortalama Akım\n";
 
             records.forEach(r => {
-                // Excel içinde tıklanabilir link hücresi üretmek için formül gömüyoruz
-                let excelHyperlink = `=HYPERLINK("${r.link}";"${r.name}")`;
+                // Formülün CSV'de parçalanmaması için hücre tamamen çift tırnak (") içine alınıyor.
+                let excelHyperlink = `"=HYPERLINK(""${r.link}"";""${r.name}"")"`;
+                
                 let row = [
                     excelHyperlink,
-                    r.link,
                     r.price,
                     r.cells,
                     r.propSize,
@@ -663,6 +662,7 @@
                     r.power,
                     r.currentAvg
                 ].join(";");
+                
                 csvContent += row + "\n";
             });
 
@@ -670,7 +670,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", "ENGRARE_IHA_Tasarim_Veritabanı.csv");
+            link.setAttribute("download", "ENGRARE_IHA_Tasarim_Veritabani.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
